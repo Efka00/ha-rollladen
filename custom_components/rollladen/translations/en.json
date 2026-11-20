@@ -9,7 +9,7 @@
         "description": "Globale Einstellungen für alle Rollläden. Rollläden legst du danach unter „Konfigurieren“ an. Die Automatik startet ausgeschaltet.",
         "data": {
           "lux_sensor": "Helligkeitssensor",
-          "anwesenheit": "Anwesenheit",
+          "anwesenheit": "Personen",
           "temperatur": "Außentemperatur",
           "beschattung_pos": "Beschattungsposition",
           "min_elevation": "Sonnenhöhe mindestens",
@@ -21,7 +21,7 @@
         },
         "data_description": {
           "lux_sensor": "Gemeinsamer Außen-Helligkeitssensor für Fahrmodus „Helligkeit“ und Beschattung.",
-          "anwesenheit": "An/zuhause = jemand da. Leer oder unklar = jemand da.",
+          "anwesenheit": "Mehrere möglich. Jemand da = mindestens eine Person zuhause. Leer, oder eine Person unbekannt und keine zuhause = jemand da.",
           "temperatur": "Für Beschattung und Frostschutz.",
           "beschattung_pos": "Auf diese Position fährt ein Rollladen beim Beschatten.",
           "min_elevation": "Darunter wird nicht beschattet.",
@@ -58,7 +58,7 @@
         "description": "Globale Einstellungen, gelten für alle Rollläden.",
         "data": {
           "lux_sensor": "Helligkeitssensor",
-          "anwesenheit": "Anwesenheit",
+          "anwesenheit": "Personen",
           "temperatur": "Außentemperatur",
           "beschattung_pos": "Beschattungsposition",
           "min_elevation": "Sonnenhöhe mindestens",
@@ -70,7 +70,7 @@
         },
         "data_description": {
           "lux_sensor": "Gemeinsamer Außen-Helligkeitssensor für Fahrmodus „Helligkeit“ und Beschattung.",
-          "anwesenheit": "An/zuhause = jemand da. Leer oder unklar = jemand da.",
+          "anwesenheit": "Mehrere möglich. Jemand da = mindestens eine Person zuhause. Leer, oder eine Person unbekannt und keine zuhause = jemand da.",
           "temperatur": "Für Beschattung und Frostschutz.",
           "beschattung_pos": "Auf diese Position fährt ein Rollladen beim Beschatten.",
           "min_elevation": "Darunter wird nicht beschattet.",
@@ -124,7 +124,7 @@
           "frostschutz": "Frostschutz"
         },
         "data_description": {
-          "name": "Gerätename, z. B. WZ Süden.",
+          "name": "Raum und Lage, z. B. Wohnzimmer Essecke. Nur ein Rollladen im Raum: nur der Raum. Wird Teil der Entity-IDs.",
           "cover": "Der Rollladen. Muss Positionen können (0 = zu, 100 = auf).",
           "taster": "Optional, mehrere möglich. Event-Entities der Taster. Kurz: zu, ganz zu → auf, während der Fahrt → Gegenrichtung. Lang: Stopp.",
           "taster_kurz": "event_type für kurzen Druck (Homematic IP: press_short).",
@@ -169,7 +169,7 @@
           "frostschutz": "Frostschutz"
         },
         "data_description": {
-          "name": "Gerätename, z. B. WZ Süden.",
+          "name": "Raum und Lage, z. B. Wohnzimmer Essecke. Nur ein Rollladen im Raum: nur der Raum. Wird Teil der Entity-IDs.",
           "cover": "Der Rollladen. Muss Positionen können (0 = zu, 100 = auf).",
           "taster": "Optional, mehrere möglich. Event-Entities der Taster. Kurz: zu, ganz zu → auf, während der Fahrt → Gegenrichtung. Lang: Stopp.",
           "taster_kurz": "event_type für kurzen Druck (Homematic IP: press_short).",
@@ -193,6 +193,12 @@
           "rollladen": "Rollläden"
         }
       }
+    }
+  },
+  "issues": {
+    "fehlende_entities": {
+      "title": "Rollladen: Entities fehlen",
+      "description": "Diese Entities aus den Einstellungen gibt es nicht (mehr) oder sie sind deaktiviert:\n\n{liste}\n\nDie betroffenen Funktionen ruhen, bis die Entity wieder da ist. Neu zuordnen unter Einstellungen → Geräte & Dienste → Rollladen → Konfigurieren. Umbenannte Entities übernimmt die Integration selbst, solange sie geladen ist."
     }
   }
 }

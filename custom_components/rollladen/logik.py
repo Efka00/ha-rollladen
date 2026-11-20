@@ -103,7 +103,13 @@ SPEICHER_DEFAULTS: dict[str, Any] = {
     "frost_frei": None,         # Datum, an dem eine Handfahrt freigegeben hat
     "letzte_pos": None,
     "grund": "–",
+    "griff_zuletzt": None,      # letzter gültiger Griffzustand
+    "protokoll": None,          # letzte Befehle, neueste zuerst
 }
+
+# Zustände, die nichts über den Griff sagen (Neustart, Funkabbruch).
+UNGUELTIG = (None, "", "unavailable", "unknown")
+PROTOKOLL_LAENGE = 12
 
 
 # ----------------------------------------------------------------------
@@ -154,6 +160,86 @@ def taster_aktion(lang: bool, status: str | None, position: int | None) -> str:
     if position == 0 or (position is None and status == "closed"):
         return "auf"
     return "zu"
+
+
+def jemand_da(zustaende: list[str | None]) -> bool:
+    """Mindestens eine Person da? Im Zweifel ja: ohne Personen, oder wenn
+    eine Person unbekannt ist und keine als zuhause gemeldet ist."""
+    if any(z in ("on", "home") for z in zustaende):
+        return True
+    return not zustaende or any(z in UNGUELTIG for z in zustaende)
+
+
+def griff_wechsel(zuletzt: str | None, roh: str | None) -> bool:
+    """Echter Griffwechsel? ``unavailable``/``unknown`` zählen nie, und die
+    Rückkehr zum letzten gültigen Zustand ist auch keiner."""
+    return roh not in UNGUELTIG and roh != zuletzt
+
+
+def griff_wert(roh: str | None, zuletzt: str | None, tuer: bool) -> str | None:
+    """Griffzustand für die Logik. Fenster behalten bei Ausfall den letzten
+    gültigen Zustand. Türen nicht: unbekannt bleibt unbekannt und sperrt
+    damit das Zufahren (Aussperrschutz)."""
+    if roh not in UNGUELTIG or tuer:
+        return roh
+    return zuletzt
+
+
+def protokoll_neu(liste: list[str] | None, eintrag: str) -> list[str]:
+    """Eintrag vorne anfügen, höchstens PROTOKOLL_LAENGE behalten."""
+    return [eintrag, *(liste or [])][:PROTOKOLL_LAENGE]
+
+
+def entity_verweise(optionen: dict[str, Any], global_keys: tuple[str, ...],
+                    rollladen_keys: tuple[str, ...], rolllaeden_key: str
+                    ) -> list[tuple[str | None, str, str]]:
+    """Alle Entity-Verweise der Optionen als (Rollladen-ID oder None,
+    Schlüssel, entity_id). Listen (Taster) werden aufgelöst."""
+    def werte(roh: Any) -> list[str]:
+        if isinstance(roh, str):
+            return [roh] if roh else []
+        if isinstance(roh, list):
+            return [w for w in roh if isinstance(w, str) and w]
+        return []
+
+    aus: list[tuple[str | None, str, str]] = []
+    for key in global_keys:
+        aus += [(None, key, e) for e in werte(optionen.get(key))]
+    for rid, d in (optionen.get(rolllaeden_key) or {}).items():
+        for key in rollladen_keys:
+            aus += [(rid, key, e) for e in werte(d.get(key))]
+    return aus
+
+
+def entity_ersetzen(optionen: dict[str, Any], alt: str, neu: str,
+                    global_keys: tuple[str, ...],
+                    rollladen_keys: tuple[str, ...], rolllaeden_key: str
+                    ) -> dict[str, Any] | None:
+    """Kopie der Optionen mit ``alt`` -> ``neu``; None, wenn nichts passt."""
+    def tausch(roh: Any) -> tuple[Any, bool]:
+        if roh == alt:
+            return neu, True
+        if isinstance(roh, list) and alt in roh:
+            return [neu if w == alt else w for w in roh], True
+        return roh, False
+
+    kopie = dict(optionen)
+    geaendert = False
+    for key in global_keys:
+        if key in kopie:
+            kopie[key], g = tausch(kopie[key])
+            geaendert |= g
+    rolllaeden = {}
+    for rid, d in (optionen.get(rolllaeden_key) or {}).items():
+        d = dict(d)
+        for key in rollladen_keys:
+            if key in d:
+                d[key], g = tausch(d[key])
+                geaendert |= g
+        rolllaeden[rid] = d
+    if rolllaeden_key in optionen:
+        kopie[rolllaeden_key] = rolllaeden
+    return kopie if geaendert else None
 
 
 # ----------------------------------------------------------------------

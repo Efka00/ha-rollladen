@@ -26,6 +26,9 @@ from homeassistant.core import (
     callback,
 )
 from homeassistant.exceptions import HomeAssistantError
+from homeassistant.helpers import device_registry as dr
+from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import issue_registry as ir
 from homeassistant.helpers.event import (
     async_call_later,
     async_track_state_change_event,
@@ -73,6 +76,9 @@ from .const import (
     CONF_WARTEZEIT,
     CONF_WETTER,
     DOMAIN,
+    ENTITY_KEYS_ANLAGE,
+    ENTITY_KEYS_ROLLLADEN,
+    FAHR_ABSTAND,
     ROLLLADEN_DEFAULTS,
     START_VERZOEGERUNG,
     ZYKLUS_SEKUNDEN,
@@ -82,7 +88,13 @@ from .logik import (
     Global,
     Rechner,
     Rollladen,
+    entity_ersetzen,
+    entity_verweise,
     frost_bewerten,
+    griff_wechsel,
+    griff_wert,
+    jemand_da as logik_jemand_da,
+    protokoll_neu,
     taster_aktion,
 )
 
@@ -91,6 +103,7 @@ _LOGGER = logging.getLogger(__name__)
 SPEICHER_VERSION = 1
 UNGUELTIG = (None, STATE_UNAVAILABLE, STATE_UNKNOWN, "")
 DIENST_TIMEOUT = 15
+ISSUE_FEHLEND = "fehlende_entities"
 
 
 def _liste(wert: Any) -> list[str]:
@@ -132,6 +145,9 @@ class Anlage:
         self._covers: dict[str, Rollladen] = {}
         self._griffe: dict[str, list[Rollladen]] = {}
         self._taster: dict[str, list[Rollladen]] = {}
+        # Fahrabstand: frühester Start der nächsten Automatik-Fahrt.
+        self._frei_ab = 0.0
+        self._wartend: list[CALLBACK_TYPE] = []
 
         self.rechner = Rechner(self, self._global())
 
@@ -201,9 +217,10 @@ class Anlage:
     @callback
     def async_start(self) -> None:
         o = self.opt
-        global_ids = [e for e in (o.get(CONF_LUX_SENSOR), o.get(CONF_ANWESENHEIT),
-                                  o.get(CONF_TEMPERATUR), o.get(CONF_NIEDERSCHLAG),
-                                  o.get(CONF_FEUCHTE), o.get(CONF_WETTER)) if e]
+        global_ids = [e for e in (o.get(CONF_LUX_SENSOR), o.get(CONF_TEMPERATUR),
+                                  o.get(CONF_NIEDERSCHLAG), o.get(CONF_FEUCHTE),
+                                  o.get(CONF_WETTER)) if e]
+        global_ids += _liste(o.get(CONF_ANWESENHEIT))
         if global_ids:
             self._abmelden.append(async_track_state_change_event(
                 self.hass, global_ids, self._on_global))
@@ -224,16 +241,23 @@ class Anlage:
         if griffe:
             self._abmelden.append(async_track_state_change_event(
                 self.hass, list(griffe), self._on_griff))
+            for r in self.rolllaeden.values():
+                roh = self._zustand(r.griff)
+                if r.griff and roh not in UNGUELTIG:
+                    r.s["griff_zuletzt"] = roh
         if taster:
             self._abmelden.append(async_track_state_change_event(
                 self.hass, list(taster), self._on_taster))
+        self._abmelden.append(self.hass.bus.async_listen(
+            er.EVENT_ENTITY_REGISTRY_UPDATED, self._on_registry))
         self._abmelden.append(async_at_started(self.hass, self._on_ha_gestartet))
 
     async def async_stop(self) -> None:
         self.gestartet = False
-        for abmelden in self._abmelden:
+        for abmelden in self._abmelden + self._wartend:
             abmelden()
         self._abmelden.clear()
+        self._wartend.clear()
         await self.store.async_save(self.daten)
 
     async def _on_ha_gestartet(self, _hass: HomeAssistant) -> None:
@@ -246,6 +270,8 @@ class Anlage:
         self._abmelden.append(async_track_time_interval(
             self.hass, self._takt, timedelta(seconds=ZYKLUS_SEKUNDEN)))
         _LOGGER.info("Rollladen gestartet (%d Rollläden)", len(self.rolllaeden))
+        self.verweise_pruefen()
+        self.bereiche_setzen()
         self.zyklus()
 
     @callback
@@ -307,14 +333,17 @@ class Anlage:
 
     @callback
     def _on_griff(self, event: Event[EventStateChangedData]) -> None:
-        if not self.gestartet:
-            return
-        alt, neu = event.data["old_state"], event.data["new_state"]
-        if neu is None or (alt is not None and alt.state == neu.state):
-            return
+        neu = event.data["new_state"]
+        roh = neu.state if neu else None
         for r in self._griffe.get(event.data["entity_id"], []):
-            self.rechner.griff_geaendert(r)
-            self.rechner.beschattung_pruefen(r)
+            # unavailable/unknown (Neustart, Funk) ist kein Griffwechsel.
+            if not griff_wechsel(r.s.get("griff_zuletzt"), roh):
+                continue
+            # Merken auch vor dem Start, reagieren erst danach.
+            r.s["griff_zuletzt"] = roh
+            if self.gestartet:
+                self.rechner.griff_geaendert(r)
+                self.rechner.beschattung_pruefen(r)
         self._abschluss()
 
     @callback
@@ -330,6 +359,7 @@ class Anlage:
                 self._taster_fahren(r, lang=True)
             elif art == r.taster_kurz:
                 self._taster_fahren(r, lang=False)
+        self._abschluss()
 
     @callback
     def _taster_fahren(self, r: Rollladen, *, lang: bool) -> None:
@@ -338,6 +368,7 @@ class Anlage:
         pos = st.attributes.get("current_position") if st else None
         aktion = taster_aktion(lang, status, pos)
         self.rechner.taster_gedrueckt(r)
+        self._protokoll(r, f"Taster {'lang' if lang else 'kurz'} → {aktion}")
         dienst = {"auf": "open_cover", "zu": "close_cover",
                   "stopp": "stop_cover"}[aktion]
         _LOGGER.debug("[%s] Taster %s → %s", r.name,
@@ -446,11 +477,9 @@ class Anlage:
         return float(self.a["lux_runter"])
 
     def jemand_da(self) -> bool:
-        """Unklar = zuhause (sicher)."""
-        st = self._zustand(self.opt.get(CONF_ANWESENHEIT))
-        if st in UNGUELTIG:
-            return True
-        return st in ("on", "home")
+        """Mindestens eine Person zuhause. Unklar = zuhause (sicher)."""
+        return logik_jemand_da([self._zustand(e) for e in
+                                _liste(self.opt.get(CONF_ANWESENHEIT))])
 
     def temperatur(self) -> float | None:
         return self._zahl(self.opt.get(CONF_TEMPERATUR))
@@ -471,7 +500,10 @@ class Anlage:
         return dt_util.as_local(wann) if wann else None
 
     def griff(self, r: Rollladen) -> str | None:
-        return self._zustand(r.griff)
+        if not r.griff:
+            return None
+        return griff_wert(self._zustand(r.griff), r.s.get("griff_zuletzt"),
+                          r.tuer)
 
     def position(self, r: Rollladen) -> int | None:
         st = self.hass.states.get(r.cover)
@@ -481,9 +513,38 @@ class Anlage:
         return int(wert) if wert is not None else None
 
     def fahre(self, r: Rollladen, pos: int) -> None:
+        """Automatik-Fahrt, mit FAHR_ABSTAND zur vorherigen."""
+        jetzt = self.hass.loop.time()
+        warten = max(0.0, self._frei_ab - jetzt)
+        self._frei_ab = jetzt + warten + FAHR_ABSTAND
+        grund = r.grund
+        zusatz = f" (+{warten:.1f} s)" if warten else ""
+        self._protokoll(r, f"→ {pos} % | {grund}{zusatz}")
+        if not warten:
+            self._fahre_jetzt(r, pos)
+            return
+
+        @callback
+        def _spaeter(_now: datetime) -> None:
+            self._wartend.remove(abbrechen)
+            self._fahre_jetzt(r, pos)
+
+        abbrechen = async_call_later(self.hass, warten, _spaeter)
+        self._wartend.append(abbrechen)
+
+    @callback
+    def _fahre_jetzt(self, r: Rollladen, pos: int) -> None:
+        if self.hass.is_stopping:
+            _LOGGER.info("[%s] Fahrt auf %s %% entfällt: HA fährt herunter",
+                         r.name, pos)
+            return
         self.hass.async_create_task(self._dienst(
             "cover", "set_cover_position",
             {"entity_id": r.cover, "position": pos}))
+
+    def _protokoll(self, r: Rollladen, text: str) -> None:
+        zeit = dt_util.now().strftime("%d.%m. %H:%M:%S")
+        r.s["protokoll"] = protokoll_neu(r.s.get("protokoll"), f"{zeit} {text}")
 
     def frost_begrenzt(self, r: Rollladen) -> None:
         if r.name not in self._frost_neu:
@@ -491,6 +552,92 @@ class Anlage:
 
     def log(self, r: Rollladen, text: str) -> None:
         _LOGGER.info("[%s] %s", r.name, text)
+
+    # ------------------------------------------------------------------
+    #  Verweise: Umbenennen folgen, Fehlende unter „Reparaturen“ melden
+    # ------------------------------------------------------------------
+
+    def _verweise(self) -> list[tuple[str | None, str, str]]:
+        return entity_verweise(dict(self.entry.options), ENTITY_KEYS_ANLAGE,
+                               ENTITY_KEYS_ROLLLADEN, CONF_ROLLLAEDEN)
+
+    @callback
+    def _on_registry(self, event: Event[er.EventEntityRegistryUpdatedData]
+                     ) -> None:
+        daten = event.data
+        alt = daten.get("old_entity_id")
+        if daten["action"] == "update" and alt:
+            neu = entity_ersetzen(dict(self.entry.options), alt,
+                                  daten["entity_id"], ENTITY_KEYS_ANLAGE,
+                                  ENTITY_KEYS_ROLLLADEN, CONF_ROLLLAEDEN)
+            if neu is not None:
+                _LOGGER.info("Umbenannt: %s → %s, Einstellungen angepasst",
+                             alt, daten["entity_id"])
+                # Lädt die Anlage über den Update-Listener neu.
+                self.hass.config_entries.async_update_entry(
+                    self.entry, options=neu)
+                return
+        if self.gestartet and any(
+                e == daten["entity_id"] for _, _, e in self._verweise()):
+            self.verweise_pruefen()
+
+    @callback
+    def bereiche_setzen(self) -> None:
+        """Neuen Rollladen-Geräten einmal den Bereich ihres Covers geben.
+
+        Läuft erst, wenn die Entities angelegt sind, damit der Bereich nicht
+        in die Entity-IDs gerät. Danach gehört der Bereich dir: Änderst oder
+        löschst du ihn, bleibt das so."""
+        ent_reg = er.async_get(self.hass)
+        dev_reg = dr.async_get(self.hass)
+        for r in self.rolllaeden.values():
+            if r.s.get("bereich_gesetzt"):
+                continue
+            geraet = dev_reg.async_get_device(identifiers={(DOMAIN, r.id)})
+            if geraet is None:
+                continue
+            r.s["bereich_gesetzt"] = True
+            if geraet.area_id:
+                continue
+            cover = ent_reg.async_get(r.cover)
+            area_id = cover.area_id if cover else None
+            if area_id is None and cover and cover.device_id:
+                cover_geraet = dev_reg.async_get(cover.device_id)
+                area_id = cover_geraet.area_id if cover_geraet else None
+            if area_id:
+                dev_reg.async_update_device(geraet.id, area_id=area_id)
+                _LOGGER.info("[%s] Bereich vom Cover übernommen", r.name)
+        self.speichern()
+
+    def _fehlt(self, entity_id: str) -> str | None:
+        """Grund, warum eine Entity fehlt, sonst None."""
+        eintrag = er.async_get(self.hass).async_get(entity_id)
+        if eintrag is not None:
+            return "deaktiviert" if eintrag.disabled_by else None
+        return None if self.hass.states.get(entity_id) else "gibt es nicht"
+
+    @callback
+    def verweise_pruefen(self) -> None:
+        """Fehlende oder deaktivierte Entities als Reparatur melden."""
+        namen = {rid: r.name for rid, r in self.rolllaeden.items()}
+        zeilen = []
+        for rid, key, entity_id in self._verweise():
+            grund = self._fehlt(entity_id)
+            if grund:
+                wo = namen.get(rid, rid) if rid else "Anlage"
+                zeilen.append(f"- {wo}, {key}: `{entity_id}` ({grund})")
+        issue_id = f"{ISSUE_FEHLEND}_{self.entry.entry_id}"
+        if not zeilen:
+            ir.async_delete_issue(self.hass, DOMAIN, issue_id)
+            return
+        _LOGGER.warning("Fehlende Entities:\n%s", "\n".join(zeilen))
+        ir.async_create_issue(
+            self.hass, DOMAIN, issue_id,
+            is_fixable=False,
+            severity=ir.IssueSeverity.WARNING,
+            translation_key=ISSUE_FEHLEND,
+            translation_placeholders={"liste": "\n".join(zeilen)},
+        )
 
     # ------------------------------------------------------------------
     #  Hilfen

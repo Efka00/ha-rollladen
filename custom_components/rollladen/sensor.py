@@ -7,6 +7,7 @@ from typing import Any
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
@@ -22,6 +23,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
     for r in anlage.sortiert():
         async_add_entities([
             Status(anlage, r),
+            Cover(anlage, r),
             Phase(anlage, r),
             Naechste(anlage, r, HOCH),
             Naechste(anlage, r, RUNTER),
@@ -58,6 +60,34 @@ class Status(RollladenEntity, SensorEntity):
             "beschattung": rech.beschattung_grund(self.r)
             if self.r.beschattbar else None,
             "frostschutz": rech.frost_greift(self.r),
+        }
+
+
+class Cover(RollladenEntity, SensorEntity):
+    """Welches Cover dieser Rollladen steuert, Griff, Taster und die letzten
+    Befehle der Integration (Automatik und Taster, neueste zuerst)."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_icon = "mdi:window-shutter-cog"
+    _unrecorded_attributes = frozenset({"protokoll"})
+
+    def __init__(self, anlage: Anlage, r: Rollladen) -> None:
+        super().__init__(anlage, r, "cover", "Cover")
+
+    @property
+    def native_value(self) -> str:
+        return self.r.cover
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        st = self.hass.states.get(self.r.cover)
+        protokoll = self.r.s.get("protokoll") or []
+        return {
+            "name": st.name if st else None,
+            "griff": self.r.griff,
+            "taster": self.r.taster,
+            "letzter_befehl": protokoll[0] if protokoll else None,
+            "protokoll": protokoll,
         }
 
 

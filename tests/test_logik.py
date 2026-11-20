@@ -483,5 +483,93 @@ class TestTaster(unittest.TestCase):
         self.assertEqual(L.taster_aktion(False, "closed", None), "auf")
 
 
+class TestGriffAusfall(unittest.TestCase):
+    """unavailable/unknown beim Neustart oder Funkabbruch."""
+
+    def test_ausfall_ist_kein_wechsel(self):
+        for roh in ("unavailable", "unknown", None, ""):
+            self.assertFalse(L.griff_wechsel("tilted", roh))
+
+    def test_rueckkehr_zum_alten_zustand_ist_kein_wechsel(self):
+        self.assertFalse(L.griff_wechsel("tilted", "tilted"))
+
+    def test_echter_wechsel(self):
+        self.assertTrue(L.griff_wechsel("tilted", "closed"))
+        self.assertTrue(L.griff_wechsel(None, "closed"))
+
+    def test_fenster_behaelt_letzten_zustand(self):
+        self.assertEqual(L.griff_wert("unavailable", "tilted", False), "tilted")
+        self.assertEqual(L.griff_wert("open", "tilted", False), "open")
+
+    def test_tuer_bleibt_unbekannt(self):
+        # Aussperrschutz: unbekannte Tür sperrt das Zufahren.
+        self.assertEqual(L.griff_wert("unavailable", "closed", True), "unavailable")
+
+
+class TestProtokoll(unittest.TestCase):
+
+    def test_neueste_zuerst_und_begrenzt(self):
+        liste = None
+        for i in range(20):
+            liste = L.protokoll_neu(liste, str(i))
+        self.assertEqual(len(liste), L.PROTOKOLL_LAENGE)
+        self.assertEqual(liste[0], "19")
+        self.assertEqual(liste[-1], "8")
+
+
+class TestEntityVerweise(unittest.TestCase):
+    G = ("lux", "temp")
+    R = ("cover", "griff", "taster")
+
+    def optionen(self):
+        return {
+            "lux": "sensor.lux", "temp": None, "x": 1,
+            "rl": {"a": {"cover": "cover.a", "griff": "sensor.g",
+                         "taster": ["event.t1", "event.t2"], "name": "A"}},
+        }
+
+    def test_verweise(self):
+        v = L.entity_verweise(self.optionen(), self.G, self.R, "rl")
+        self.assertEqual(v, [(None, "lux", "sensor.lux"),
+                             ("a", "cover", "cover.a"),
+                             ("a", "griff", "sensor.g"),
+                             ("a", "taster", "event.t1"),
+                             ("a", "taster", "event.t2")])
+
+    def test_ersetzen_in_liste_ohne_original_zu_aendern(self):
+        alt = self.optionen()
+        neu = L.entity_ersetzen(alt, "event.t2", "event.t9", self.G, self.R, "rl")
+        self.assertEqual(neu["rl"]["a"]["taster"], ["event.t1", "event.t9"])
+        self.assertEqual(alt["rl"]["a"]["taster"], ["event.t1", "event.t2"])
+        self.assertEqual(neu["x"], 1)
+
+    def test_ersetzen_global(self):
+        neu = L.entity_ersetzen(self.optionen(), "sensor.lux", "sensor.hell",
+                                self.G, self.R, "rl")
+        self.assertEqual(neu["lux"], "sensor.hell")
+
+    def test_ersetzen_ohne_treffer(self):
+        self.assertIsNone(L.entity_ersetzen(self.optionen(), "sensor.nix",
+                                            "sensor.y", self.G, self.R, "rl"))
+
+
+
+class TestJemandDa(unittest.TestCase):
+
+    def test_ohne_personen_jemand_da(self):
+        self.assertTrue(L.jemand_da([]))
+
+    def test_eine_zuhause_reicht(self):
+        self.assertTrue(L.jemand_da(["not_home", "home"]))
+        self.assertTrue(L.jemand_da(["unavailable", "home"]))
+
+    def test_alle_weg(self):
+        self.assertFalse(L.jemand_da(["not_home", "not_home"]))
+        self.assertFalse(L.jemand_da(["Arbeit"]))      # andere Zone
+
+    def test_unbekannt_zaehlt_als_da(self):
+        self.assertTrue(L.jemand_da(["not_home", "unknown"]))
+
+
 if __name__ == "__main__":
     unittest.main()

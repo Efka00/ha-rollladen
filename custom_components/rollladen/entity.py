@@ -2,9 +2,6 @@
 
 from __future__ import annotations
 
-from homeassistant.helpers import area_registry as ar
-from homeassistant.helpers import device_registry as dr
-from homeassistant.helpers import entity_registry as er
 from homeassistant.helpers.device_registry import DeviceInfo
 from homeassistant.helpers.entity import Entity
 
@@ -36,23 +33,12 @@ class AnlageEntity(Entity):
             self.anlage.async_add_listener(self.async_write_ha_state))
 
 
-def _bereich(anlage: Anlage, entity_id: str) -> str | None:
-    """Bereich des Covers (direkt oder über sein Gerät) als Vorschlag."""
-    eintrag = er.async_get(anlage.hass).async_get(entity_id)
-    if eintrag is None:
-        return None
-    area_id = eintrag.area_id
-    if area_id is None and eintrag.device_id:
-        geraet = dr.async_get(anlage.hass).async_get(eintrag.device_id)
-        area_id = geraet.area_id if geraet else None
-    if area_id is None:
-        return None
-    bereich = ar.async_get(anlage.hass).async_get_area(area_id)
-    return bereich.name if bereich else None
-
-
 class RollladenEntity(AnlageEntity):
-    """Entity am Gerät eines Rollladens."""
+    """Entity am Gerät eines Rollladens.
+
+    Bewusst ohne ``suggested_area``: Home Assistant setzt den Bereich sonst
+    vor jede Entity-ID (``abstellkammer_abstellkammer_automatik``). Den
+    Bereich trägt ``Anlage.bereiche_setzen`` nach, wenn die IDs stehen."""
 
     def __init__(self, anlage: Anlage, r: Rollladen, key: str, name: str) -> None:
         super().__init__(anlage, key, name)
@@ -64,5 +50,4 @@ class RollladenEntity(AnlageEntity):
             manufacturer="ha-rollladen",
             model="Rollladen",
             via_device_id=anlage.geraet_id,
-            suggested_area=_bereich(anlage, r.cover),
         )

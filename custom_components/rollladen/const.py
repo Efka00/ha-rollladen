@@ -79,3 +79,12 @@ ANLAGE_SPEICHER_DEFAULTS = {
 # Zykluszeit und Startverzögerung in Sekunden (fest).
 ZYKLUS_SEKUNDEN = 60
 START_VERZOEGERUNG = 10
+
+# Abstand zwischen zwei Automatik-Fahrten in Sekunden, damit nicht alle
+# Motoren gleichzeitig anlaufen (Bus, Anlaufstrom). Taster fahren sofort.
+FAHR_ABSTAND = 1.5
+
+# Optionen, die auf Entities verweisen (Umbenennen folgen, Fehlende melden).
+ENTITY_KEYS_ANLAGE = (CONF_LUX_SENSOR, CONF_ANWESENHEIT, CONF_TEMPERATUR,
+                      CONF_NIEDERSCHLAG, CONF_FEUCHTE, CONF_WETTER)
+ENTITY_KEYS_ROLLLADEN = (CONF_COVER, CONF_GRIFF, CONF_TASTER)

@@ -4,7 +4,7 @@ Custom Integration für [Home Assistant](https://www.home-assistant.io/) zur Ste
 
 Die Integration fährt die Rollläden selbst: morgens hoch und abends runter nach Uhrzeit, Helligkeit oder Sonnenstand. Sie beschattet bei Sonne, folgt dem Fenstergriff, schützt Türen vor dem Aussperren, erkennt Handbetrieb, bedient die Wandtaster und passt bei Frost auf. Alles wird in der Oberfläche von Home Assistant eingerichtet. Es sind keine Helfer, Automationen oder YAML nötig.
 
-> **Stand:** Version 0.1.0, erste Fassung. Die Logik ist ein Port der AppDaemon-App „ASC“ (v0.27) und mit Tests abgesichert, im Alltag aber noch nicht erprobt. Die Oberfläche ist nur auf Deutsch.
+> **Stand:** Version 0.1.1, erste Fassung. Die Logik ist ein Port der AppDaemon-App „ASC“ (v0.27) und mit Tests abgesichert, im Alltag aber noch nicht erprobt. Die Oberfläche ist nur auf Deutsch.
 
 ---
 
@@ -21,6 +21,7 @@ Die Integration fährt die Rollläden selbst: morgens hoch und abends runter nac
 - [Frostschutz](#frostschutz)
 - [Umstellung vom Altsystem](#umstellung-vom-altsystem)
 - [Neustart und Speicherung](#neustart-und-speicherung)
+- [Umbenennen und fehlende Entities](#umbenennen-und-fehlende-entities)
 - [Bekannte Grenzen](#bekannte-grenzen)
 - [Entwicklung](#entwicklung)
 - [Versionen](#versionen)
@@ -59,7 +60,7 @@ Die Integration fährt die Rollläden selbst: morgens hoch und abends runter nac
 - Home Assistant mit Marketplace (ab 2026.11) oder HACS.
 - Je Rollladen eine `cover`-Entity mit Position (0 = zu, 100 = auf).
 - Ein Außen-Helligkeitssensor (Lux).
-- Optional: Anwesenheit (`binary_sensor`, `person`, `group`), Außentemperatur, Fenstergriffsensoren (`closed` / `tilted` / `open`, z. B. HmIP-SRH), Taster als `event`-Entities, für den Frostschutz Niederschlag, Luftfeuchte und eine Wetter-Entity.
+- Optional: Personen (`person`) für die Anwesenheit, Außentemperatur, Fenstergriffsensoren (`closed` / `tilted` / `open`, z. B. HmIP-SRH), Taster als `event`-Entities, für den Frostschutz Niederschlag, Luftfeuchte und eine Wetter-Entity.
 
 ---
 
@@ -81,7 +82,7 @@ Die Integration kann nur einmal eingerichtet werden. Beim Hinzufügen werden die
 | Einstellung | Standard | Bedeutung |
 |---|---|---|
 | Helligkeitssensor | – | Pflicht. Für den Fahrmodus Helligkeit und die Beschattung. |
-| Anwesenheit | leer | An / zuhause = jemand da. Leer oder unklar = jemand da. |
+| Personen | leer | Dropdown, mehrere möglich. Jemand da = mindestens eine Person zuhause. Leer, oder eine Person unbekannt und keine zuhause = jemand da. |
 | Außentemperatur | leer | Für Beschattung und Frostschutz. |
 | Beschattungsposition | 40 % | |
 | Sonnenhöhe mindestens | 20° | Darunter keine Beschattung. |
@@ -107,7 +108,7 @@ Ein- und ausgeschaltet wird der Frostschutz über den Schalter **Frostschutz**, 
 
 | Einstellung | Standard | Bedeutung |
 |---|---|---|
-| Name | – | Gerätename, z. B. WZ Süden. |
+| Name | – | Raum und Lage, z. B. „Wohnzimmer Essecke“, bei nur einem Rollladen im Raum nur der Raum. Der Name wird Teil der Entity-IDs (`switch.wohnzimmer_essecke_automatik`). Den Bereich übernimmt das Gerät nach dem Anlegen vom Cover. |
 | Cover | – | Der Rollladen. |
 | Taster | leer | Eine oder mehrere `event`-Entities. |
 | Ereignis kurz / lang | `press_short` / `press_long` | `event_type` der Taster (Homematic IP). |
@@ -148,6 +149,7 @@ Neue Rollläden starten mit **Automatik aus**.
 | Anwesenheit hoch / runter | Auswahl | Immer, Nur wenn niemand da ist, Aus. |
 | Beschattung | Auswahl | Aus, Immer, Nur wenn jemand da ist, Nur wenn niemand da ist (nur mit Azimut). |
 | Status | Sensor | Letzte Aktion mit Grund. Attribute: Phase, Soll, Position, Griff, Tür-Sperre, Handsperre bis, Blocking, Beschattung, Frostschutz. |
+| Cover | Sensor (Diagnose) | Das gesteuerte Cover. Attribute: Name, Griff, Taster, `letzter_befehl` und `protokoll` (die letzten 12 Befehle der Integration mit Uhrzeit und Grund, neueste zuerst). Steht eine Fahrt am Cover nicht im Protokoll, kam sie nicht von der Integration. |
 | Phase | Sensor | auf / zu. |
 | Nächste Hochfahrt / Runterfahrt | Zeitstempel | |
 | Letzte Hochfahrt / Runterfahrt | Zeitstempel | Tages-Merker, standardmäßig deaktiviert. |
@@ -170,7 +172,7 @@ Ausgewertet wird jede Minute und sofort bei Änderungen (Helligkeit, Anwesenheit
 
 **Abendfahrt** (einmal am Tag, nicht bei Handsperre). Ab „Runter frühestens“, Modi analog. Ziel ist die Griffposition: zu 0 %, gekippt 25 %, offen 80 %. Ohne Helligkeitswert fährt „Helligkeit“ wie „Astro“.
 
-**Griff** (nur in der Zu-Phase). Der Rollladen folgt dem Griff, auch während einer Handsperre. In der Auf-Phase wird der Griff ignoriert.
+**Griff** (nur in der Zu-Phase). Der Rollladen folgt dem Griff, auch während einer Handsperre. In der Auf-Phase wird der Griff ignoriert. Meldet der Griffsensor kurz `unavailable` oder `unknown` (Neustart, Funkabbruch), zählt das nicht als Griffwechsel. Ein Fenster behält solange den letzten gültigen Zustand, eine Tür nicht (siehe Tür-Sicherung).
 
 **Tür-Sicherung.** Ist der Griff einer Tür nicht `closed`/`tilted` (also auch bei totem Sensor), verweigert die Automatik jede Fahrt unter 100 %. Tür öffnen fährt sofort auf 100 %, egal welche Phase oder Sperre. Handfahrten werden nicht zurückgedreht.
 
@@ -181,6 +183,8 @@ Ausgewertet wird jede Minute und sofort bei Änderungen (Helligkeit, Anwesenheit
 4. Sonst (Zu-Phase oder während der Beschattung) → Sperre. Nach Ablauf fährt er zurück auf die Griffposition.
 
 **Blocking-Zeiten.** Vor der Morgenfahrt kein Zufahren, vor der Abendfahrt kein Auffahren. Gilt für Griff und Rückfahrt, nicht für die Tagesfahrten.
+
+**Fahrabstand.** Automatik-Fahrten starten mit 1,5 s Abstand, damit bei gleicher Fahrzeit nicht alle Motoren gleichzeitig anlaufen. Taster fahren sofort. Während HA herunterfährt, schickt die Integration keine Fahrbefehle mehr.
 
 **Beschattung** (nur Auf-Phase). Beschattet wird, wenn alles zutrifft: Schalter an, Automatik an, Modus passt zur Anwesenheit, keine Handsperre, Fenster zu, Sonne mindestens 20° hoch und im Azimutbereich, mindestens 18 °C, Helligkeit über 30 000 lx. Entschattet wird sofort, wenn eine Bedingung wegfällt, wegen der Helligkeit erst unter 15 000 lx. Zwischen zwei Helligkeits-Entscheidungen liegen mindestens 10 min.
 
@@ -221,18 +225,18 @@ Die Integration startet mit Automatik aus. Rollladen für Rollladen umstellen:
 | Abstellkammer | `cover.eg_ak_ro` | `event.hmipw_e01_eg_ak_tt_s2` | `sensor.hmip_eg_ak_fk` | | 80 | 45–135 |
 | Gäste-WC | `cover.eg_wc_ro` | `event.hmipw_e01_eg_wc_tt_s2` (lang: `press_long_release`) | `sensor.hmip_eg_wc_fk` | | 80 | 315–359 |
 | Küche | `cover.eg_kz_ro` | `event.hmipw_e01_eg_kz_tt1_s1`, `event.hmipw_e02_eg_kz_tt2_s1` | `sensor.hmip_eg_kz_fk` | | 80 | 45–135 |
-| WZ Süden | `cover.eg_wz_ro1` | `event.hmipw_e02_eg_wz_tt1_s1` | `sensor.hmip_eg_wz_fk1` | | 80 | 105–230 |
-| WZ Essecke | `cover.eg_wz_ro2` | `event.hmipw_e02_eg_wz_tt1_s3` | `sensor.hmip_eg_wz_fk2` | ja | 100 | 205–270 |
-| WZ Terrasse | `cover.eg_wz_ro3` | `event.hmipw_e02_eg_wz_tt1_s5` | `sensor.hmip_eg_wz_fk3` | ja | 100 | 205–270 |
-| WZ Couch | `cover.eg_wz_ro4` | `event.hmipw_e02_eg_wz_tt1_s7` | `sensor.hmip_srh_0007d8a99fc532` | | 80 | 205–270 |
-| KiZ2 West | `cover.og_kiz2_ro1` | `event.hmipw_e03_og_kiz2_tt_s1` | `sensor.hmip_og_kiz2_fk1` | | 80 | 205–270 |
-| KiZ2 Nord | `cover.og_kiz2_ro2` | `event.hmipw_e03_og_kiz2_tt_s3` | `sensor.hmip_og_kiz2_fk2` | | 80 | 315–359 |
+| Wohnzimmer Süd | `cover.eg_wz_ro1` | `event.hmipw_e02_eg_wz_tt1_s1` | `sensor.hmip_eg_wz_fk1` | | 80 | 105–230 |
+| Wohnzimmer Essecke | `cover.eg_wz_ro2` | `event.hmipw_e02_eg_wz_tt1_s3` | `sensor.hmip_eg_wz_fk2` | ja | 100 | 205–270 |
+| Wohnzimmer Terrasse | `cover.eg_wz_ro3` | `event.hmipw_e02_eg_wz_tt1_s5` | `sensor.hmip_eg_wz_fk3` | ja | 100 | 205–270 |
+| Wohnzimmer Couch | `cover.eg_wz_ro4` | `event.hmipw_e02_eg_wz_tt1_s7` | `sensor.hmip_srh_0007d8a99fc532` | | 80 | 205–270 |
+| Kinderzimmer 2 West | `cover.og_kiz2_ro1` | `event.hmipw_e03_og_kiz2_tt_s1` | `sensor.hmip_og_kiz2_fk1` | | 80 | 205–270 |
+| Kinderzimmer 2 Nord | `cover.og_kiz2_ro2` | `event.hmipw_e03_og_kiz2_tt_s3` | `sensor.hmip_og_kiz2_fk2` | | 80 | 315–359 |
 | Bad | `cover.og_bad_ro` | `event.hmipw_e02_og_bad_tt_s1` | `sensor.hmip_og_bad_fk` | | 80 | 315–359 |
-| SZ Süd | `cover.og_sz_ro1` | `event.hmipw_e02_og_sz_tt_s2` | `sensor.hmip_og_sz_fk1` | | 80 | 105–230 |
-| SZ West | `cover.og_sz_ro2` | `event.hmipw_e02_og_sz_tt_s4` | `sensor.hmip_og_sz_fk2` | | 80 | 205–270 |
-| KiZ1 | `cover.og_kiz1_ro` | `event.hmipw_e03_og_kiz1_tt_s2` | `sensor.hmip_og_kiz1_fk` | | 80 | 105–230 |
+| Schlafzimmer Süd | `cover.og_sz_ro1` | `event.hmipw_e02_og_sz_tt_s2` | `sensor.hmip_og_sz_fk1` | | 80 | 105–230 |
+| Schlafzimmer West | `cover.og_sz_ro2` | `event.hmipw_e02_og_sz_tt_s4` | `sensor.hmip_og_sz_fk2` | | 80 | 205–270 |
+| Kinderzimmer 1 | `cover.og_kiz1_ro` | `event.hmipw_e03_og_kiz1_tt_s2` | `sensor.hmip_og_kiz1_fk` | | 80 | 105–230 |
 
-Frostschutz für WZ Essecke und WZ Terrasse ausschalten (unter dem Terrassendach). Anlage: Helligkeit `sensor.au_gt_sen_light_illuminance`, Anwesenheit `binary_sensor.anwesenheit_haus`, Temperatur `sensor.rosenthal_temperatur`, Niederschlag `sensor.rosenthal_niederschlag_1h`, Luftfeuchte `sensor.rosenthal_luftfeuchte`.
+Frostschutz für Wohnzimmer Essecke und Wohnzimmer Terrasse ausschalten (unter dem Terrassendach). Anlage: Helligkeit `sensor.au_gt_sen_light_illuminance`, Personen aus dem Dropdown, Temperatur `sensor.rosenthal_temperatur`, Niederschlag `sensor.rosenthal_niederschlag_1h`, Luftfeuchte `sensor.rosenthal_luftfeuchte`.
 
 Wenn alle umgestellt sind: AppDaemon-App, Taster-Automationen und Helfer entfernen, Dashboards (Hardware-Ansicht ASC, Merker-Kacheln in der Hausübersicht) auf die neuen Entities umstellen.
 
@@ -240,7 +244,15 @@ Wenn alle umgestellt sind: AppDaemon-App, Taster-Automationen und Helfer entfern
 
 ## Neustart und Speicherung
 
-Gespeichert und über Neustarts erhalten: Anlagenschalter und -werte, Einstellungen je Rollladen, Tages-Merker, Handsperre, Beschattungszustand, die zuletzt selbst kommandierte Position, Frostfreigabe und der Frostzustand mit letztem Niederschlag. Die erste Auswertung läuft 10 s nach dem Start von HA.
+Gespeichert und über Neustarts erhalten: Anlagenschalter und -werte, Einstellungen je Rollladen, Tages-Merker, Handsperre, Beschattungszustand, die zuletzt selbst kommandierte Position, der letzte gültige Griffzustand, das Befehlsprotokoll, Frostfreigabe und der Frostzustand mit letztem Niederschlag. Die erste Auswertung läuft 10 s nach dem Start von HA.
+
+---
+
+## Umbenennen und fehlende Entities
+
+Benennst du ein Cover, einen Griff, einen Taster oder einen Anlagen-Sensor um („Entitäts-ID ändern“), übernimmt die Integration die neue ID selbst in ihre Einstellungen und lädt neu. Das klappt nur, solange sie geladen ist.
+
+Gibt es eine Entity aus den Einstellungen nicht mehr oder ist sie deaktiviert, steht unter **Einstellungen → Reparaturen** ein Eintrag mit der Liste. Neu zuordnen unter **Konfigurieren**. Der Eintrag verschwindet, sobald alles wieder da ist.
 
 ---
 
@@ -264,6 +276,7 @@ python3 -m unittest discover -s tests -v
 
 ## Versionen
 
+- **0.1.1** (20.11.2026): Diagnose-Sensor „Cover“ mit Befehlsprotokoll. Anwesenheit als Mehrfachauswahl der Personen. Griffsensor `unavailable`/`unknown` löst keine Fahrt mehr aus (bisher fuhr ein gekipptes Fenster nachts beim Neustart kurz zu). 1,5 s Abstand zwischen Automatik-Fahrten, keine Fahrbefehle beim Herunterfahren. Umbenannte Entities werden übernommen, fehlende unter „Reparaturen“ gemeldet. Entity-IDs ohne doppelten Raumnamen: Der Bereich kommt erst nach dem Anlegen ans Gerät.
 - **0.1.0** (20.11.2026): Erste Fassung. Port von ASC v0.27 mit Taster, Frostschutz (Nässeprüfung) und Speicherung von Handsperre und Beschattung. Korrektur gegenüber ASC: Ohne Helligkeitswert fährt „Helligkeit“ jetzt wirklich zum Sonnenaufgang statt erst zur Spätzeit.
 
 ## Lizenz

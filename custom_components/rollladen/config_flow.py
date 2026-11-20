@@ -92,7 +92,7 @@ def _entity(domain: str | list[str], **kwargs: Any) -> selector.EntitySelector:
         selector.EntitySelectorConfig(domain=domain, **kwargs))
 
 
-def notify_liste(wert: Any) -> list[str]:
+def als_liste(wert: Any) -> list[str]:
     if not wert:
         return []
     if isinstance(wert, str):
@@ -115,9 +115,25 @@ def _handys(hass: HomeAssistant, aktuell: Any) -> selector.SelectSelector:
                 value=f"notify.{dienst}", label=name))
     optionen.sort(key=lambda o: o["label"].lower())
     vorhanden = {o["value"] for o in optionen}
-    for dienst in notify_liste(aktuell):
+    for dienst in als_liste(aktuell):
         if dienst not in vorhanden:
             optionen.append(selector.SelectOptionDict(value=dienst, label=dienst))
+    return selector.SelectSelector(selector.SelectSelectorConfig(
+        options=optionen, multiple=True,
+        mode=selector.SelectSelectorMode.DROPDOWN))
+
+
+def _personen(hass: HomeAssistant, aktuell: Any) -> selector.SelectSelector:
+    """Mehrfachauswahl der Personen. Gespeicherte Entities bleiben wählbar
+    (auch eine frühere Einzel-Entity wie ein input_boolean)."""
+    optionen = [selector.SelectOptionDict(value=st.entity_id, label=st.name)
+                for st in hass.states.async_all("person")]
+    optionen.sort(key=lambda o: o["label"].lower())
+    vorhanden = {o["value"] for o in optionen}
+    for entity_id in als_liste(aktuell):
+        if entity_id not in vorhanden:
+            optionen.append(selector.SelectOptionDict(value=entity_id,
+                                                      label=entity_id))
     return selector.SelectSelector(selector.SelectSelectorConfig(
         options=optionen, multiple=True,
         mode=selector.SelectSelectorMode.DROPDOWN))
@@ -129,8 +145,9 @@ def _anlage_schema(hass: HomeAssistant, werte: dict[str, Any]) -> vol.Schema:
         vol.Required(CONF_LUX_SENSOR,
                      description={"suggested_value": w.get(CONF_LUX_SENSOR)}):
             _entity("sensor", device_class="illuminance"),
-        _optional(CONF_ANWESENHEIT, w):
-            _entity(["binary_sensor", "person", "group", "input_boolean"]),
+        vol.Optional(CONF_ANWESENHEIT,
+                     default=als_liste(w.get(CONF_ANWESENHEIT))):
+            _personen(hass, w.get(CONF_ANWESENHEIT)),
         _optional(CONF_TEMPERATUR, w): _entity("sensor", device_class="temperature"),
         vol.Required(CONF_BESCHATTUNG_POS, default=w[CONF_BESCHATTUNG_POS]):
             _zahl(0, 100, 1, "%"),
@@ -144,7 +161,7 @@ def _anlage_schema(hass: HomeAssistant, werte: dict[str, Any]) -> vol.Schema:
             _zahl(0, 200000, 500, "lx"),
         vol.Required(CONF_WARTEZEIT, default=w[CONF_WARTEZEIT]):
             _zahl(0, 120, 1, "min"),
-        vol.Optional(CONF_NOTIFY, default=notify_liste(w.get(CONF_NOTIFY))):
+        vol.Optional(CONF_NOTIFY, default=als_liste(w.get(CONF_NOTIFY))):
             _handys(hass, w.get(CONF_NOTIFY)),
     })
 
