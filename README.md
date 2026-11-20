@@ -4,7 +4,7 @@ Custom Integration für [Home Assistant](https://www.home-assistant.io/) zur Ste
 
 Die Integration fährt die Rollläden selbst: morgens hoch und abends runter nach Uhrzeit, Helligkeit oder Sonnenstand. Sie beschattet bei Sonne, folgt dem Fenstergriff, schützt Türen vor dem Aussperren, erkennt Handbetrieb, bedient die Wandtaster und passt bei Frost auf. Alles wird in der Oberfläche von Home Assistant eingerichtet. Es sind keine Helfer, Automationen oder YAML nötig.
 
-> **Stand:** Version 0.1.4, erste Fassung. Die Logik ist ein Port der AppDaemon-App „ASC“ (v0.27) und mit Tests abgesichert, im Alltag aber noch nicht erprobt. Die Oberfläche ist nur auf Deutsch.
+> **Stand:** Version 0.1.5, erste Fassung. Die Logik ist ein Port der AppDaemon-App „ASC“ (v0.27) und mit Tests abgesichert, im Alltag aber noch nicht erprobt. Die Oberfläche ist nur auf Deutsch.
 
 ---
 
@@ -150,7 +150,7 @@ Neue Rollläden starten mit **Automatik aus**.
 | Anwesenheit hoch / runter | Auswahl | Immer, Nur wenn niemand da ist, Aus. |
 | Beschattung | Auswahl | Aus, Immer, Nur wenn jemand da ist, Nur wenn niemand da ist (nur mit Azimut). |
 | Status | Sensor | Letzte Aktion mit Grund. Attribute: Phase, Soll, Position, Griff, Tür-Sperre, Handsperre bis, Blocking, Beschattung, Frostschutz, Helligkeit (Mittelwert). |
-| Cover | Sensor (Diagnose) | Das gesteuerte Cover. Attribute: Name, Griff, Taster, `letzter_befehl` und `protokoll` (die letzten 12 Befehle der Integration mit Uhrzeit und Grund, neueste zuerst). Steht eine Fahrt am Cover nicht im Protokoll, kam sie nicht von der Integration. |
+| Position | Sensor (Diagnose) | Aktuelle Position des Covers in %. Attribute: gesteuertes Cover, Name, Griff, Taster, `letzter_befehl` und `protokoll` (die letzten 12 Befehle der Integration mit Uhrzeit und Grund, neueste zuerst). Steht eine Fahrt am Cover nicht im Protokoll, kam sie nicht von der Integration. |
 | Phase | Sensor | auf / zu. |
 | Nächste Hochfahrt / Runterfahrt | Sensor | Uhrzeit zum Lesen: „19:00“ (heute), „morgen 07:49“, sonst Wochentag. Genauer Zeitpunkt im Attribut `zeitpunkt`. |
 | Letzte Hochfahrt / Runterfahrt | Sensor | Tages-Merker, Anzeige wie oben („gestern 19:00“), standardmäßig deaktiviert. |
@@ -279,6 +279,7 @@ python3 -m unittest discover -s tests -v
 
 ## Versionen
 
+- **0.1.5** (20.11.2026): Diagnose-Sensor heißt „Position“ und zeigt die Position des Covers in %. Das Cover steht im Attribut `cover`.
 - **0.1.4** (20.11.2026): Nächste und letzte Fahrten als Uhrzeit („19:00“, „morgen 07:49“) statt „in 8 Stunden“. Genauer Zeitpunkt im Attribut `zeitpunkt`.
 - **0.1.3** (20.11.2026): Langer Tastendruck stoppt genau einmal, auch wenn `press_long` beim Halten wiederholt kommt. Gäste-WC ohne Sonderregel.
 - **0.1.2** (20.11.2026): Helligkeit als zeitgewichteter Mittelwert (Vorgabe 5 min), damit Ausreißer des Sensors nichts auslösen. Kurze Sensorausfälle überbrückt der letzte Wert.

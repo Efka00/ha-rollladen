@@ -6,13 +6,13 @@ from typing import Any
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import EntityCategory
+from homeassistant.const import PERCENTAGE, EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
+from homeassistant.util import dt as dt_util
 
 from .anlage import Anlage
 from .entity import RollladenEntity
-from homeassistant.util import dt as dt_util
 
 from .logik import AUF, HOCH, RUNTER, ZU, Rollladen, aus_iso, zeit_text
 
@@ -67,25 +67,29 @@ class Status(RollladenEntity, SensorEntity):
 
 
 class Cover(RollladenEntity, SensorEntity):
-    """Welches Cover dieser Rollladen steuert, Griff, Taster und die letzten
-    Befehle der Integration (Automatik und Taster, neueste zuerst)."""
+    """Diagnose: aktuelle Position des Covers in %. Als Attribute das
+    gesteuerte Cover, Griff, Taster und die letzten Befehle der Integration
+    (Automatik und Taster, neueste zuerst). Schlüssel bleibt „cover“, damit
+    bestehende Entities erhalten bleiben."""
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_icon = "mdi:window-shutter-cog"
+    _attr_native_unit_of_measurement = PERCENTAGE
     _unrecorded_attributes = frozenset({"protokoll"})
 
     def __init__(self, anlage: Anlage, r: Rollladen) -> None:
-        super().__init__(anlage, r, "cover", "Cover")
+        super().__init__(anlage, r, "cover", "Position")
 
     @property
-    def native_value(self) -> str:
-        return self.r.cover
+    def native_value(self) -> int | None:
+        return self.anlage.position(self.r)
 
     @property
     def extra_state_attributes(self) -> dict[str, Any]:
         st = self.hass.states.get(self.r.cover)
         protokoll = self.r.s.get("protokoll") or []
         return {
+            "cover": self.r.cover,
             "name": st.name if st else None,
             "griff": self.r.griff,
             "taster": self.r.taster,
