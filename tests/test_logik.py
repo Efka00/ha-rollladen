@@ -627,5 +627,21 @@ class TestLangerDruck(unittest.TestCase):
         self.assertFalse(L.lang_wiederholung(10.0, 12.0))
 
 
+
+class TestZeitText(unittest.TestCase):
+
+    def test_heute_morgen_gestern_wochentag(self):
+        jetzt = dt(10, 0)                       # Fr 20.11.2026
+        self.assertEqual(L.zeit_text(dt(19, 0), jetzt), "19:00")
+        self.assertEqual(L.zeit_text(dt(7, 49, tag=21), jetzt), "morgen 07:49")
+        self.assertEqual(L.zeit_text(dt(19, 0, tag=19), jetzt), "gestern 19:00")
+        self.assertEqual(L.zeit_text(dt(7, 49, tag=23), jetzt), "Mo 07:49")
+        self.assertIsNone(L.zeit_text(None, jetzt))
+
+    def test_utc_wird_lokal(self):
+        utc = datetime(2026, 11, 20, 18, 0, tzinfo=ZoneInfo("UTC"))
+        self.assertEqual(L.zeit_text(utc, dt(10, 0)), "19:00")
+
+
 if __name__ == "__main__":
     unittest.main()

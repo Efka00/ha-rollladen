@@ -208,6 +208,26 @@ def jemand_da(zustaende: list[str | None]) -> bool:
     return not zustaende or any(z in UNGUELTIG for z in zustaende)
 
 
+WOCHENTAGE = ("Mo", "Di", "Mi", "Do", "Fr", "Sa", "So")
+
+
+def zeit_text(wann: datetime | None, jetzt: datetime) -> str | None:
+    """Uhrzeit zum Lesen: „19:00“ heute, sonst „morgen 07:49“,
+    „gestern 19:00“ oder „Sa 07:49“."""
+    if wann is None:
+        return None
+    wann = wann.astimezone(jetzt.tzinfo)
+    uhr = wann.strftime("%H:%M")
+    tage = (wann.date() - jetzt.date()).days
+    if tage == 0:
+        return uhr
+    if tage == 1:
+        return f"morgen {uhr}"
+    if tage == -1:
+        return f"gestern {uhr}"
+    return f"{WOCHENTAGE[wann.weekday()]} {uhr}"
+
+
 def lang_wiederholung(zuletzt: float | None, jetzt: float) -> bool:
     """Ist dieser lange Druck nur die Wiederholung beim Halten? Zählt ab dem
     letzten Ereignis, langes Halten bleibt also ein einziger Druck."""

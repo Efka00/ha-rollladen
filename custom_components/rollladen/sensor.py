@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Any
 
 from homeassistant.components.sensor import SensorDeviceClass, SensorEntity
@@ -13,7 +12,9 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .anlage import Anlage
 from .entity import RollladenEntity
-from .logik import AUF, HOCH, RUNTER, ZU, Rollladen, aus_iso
+from homeassistant.util import dt as dt_util
+
+from .logik import AUF, HOCH, RUNTER, ZU, Rollladen, aus_iso, zeit_text
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
@@ -107,7 +108,8 @@ class Phase(RollladenEntity, SensorEntity):
 
 
 class Naechste(RollladenEntity, SensorEntity):
-    _attr_device_class = SensorDeviceClass.TIMESTAMP
+    """Geplante Fahrt als lesbare Uhrzeit („19:00“, „morgen 07:49“).
+    Der genaue Zeitpunkt steht im Attribut ``zeitpunkt``."""
 
     def __init__(self, anlage: Anlage, r: Rollladen, richtung: str) -> None:
         name = "Nächste Hochfahrt" if richtung == HOCH else "Nächste Runterfahrt"
@@ -117,14 +119,20 @@ class Naechste(RollladenEntity, SensorEntity):
                            else "mdi:arrow-down-bold-circle-outline")
 
     @property
-    def native_value(self) -> datetime:
-        return self.anlage.rechner.naechste(self.r, self._richtung)
+    def native_value(self) -> str | None:
+        return zeit_text(self.anlage.rechner.naechste(self.r, self._richtung),
+                         dt_util.now())
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        wann = self.anlage.rechner.naechste(self.r, self._richtung)
+        return {"zeitpunkt": wann.isoformat() if wann else None}
 
 
 class Letzte(RollladenEntity, SensorEntity):
-    """Letzte Tagesfahrt dieser Richtung (Tages-Merker)."""
+    """Letzte Tagesfahrt dieser Richtung (Tages-Merker), lesbar wie
+    ``Naechste``; genauer Zeitpunkt im Attribut ``zeitpunkt``."""
 
-    _attr_device_class = SensorDeviceClass.TIMESTAMP
     _attr_entity_registry_enabled_default = False
 
     def __init__(self, anlage: Anlage, r: Rollladen, richtung: str) -> None:
@@ -134,5 +142,11 @@ class Letzte(RollladenEntity, SensorEntity):
         self._attr_icon = "mdi:history"
 
     @property
-    def native_value(self) -> datetime | None:
-        return aus_iso(self.r.s.get("letzte_" + self._richtung))
+    def native_value(self) -> str | None:
+        return zeit_text(aus_iso(self.r.s.get("letzte_" + self._richtung)),
+                         dt_util.now())
+
+    @property
+    def extra_state_attributes(self) -> dict[str, Any]:
+        wann = aus_iso(self.r.s.get("letzte_" + self._richtung))
+        return {"zeitpunkt": wann.isoformat() if wann else None}
