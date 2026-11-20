@@ -96,6 +96,7 @@ from .logik import (
     griff_wechsel,
     griff_wert,
     jemand_da as logik_jemand_da,
+    lang_wiederholung,
     lux_mittel,
     lux_proben_kuerzen,
     protokoll_neu,
@@ -154,6 +155,8 @@ class Anlage:
         self._wartend: list[CALLBACK_TYPE] = []
         # Helligkeit: (Zeitstempel, Wert) für den gleitenden Mittelwert.
         self._lux_proben: list[tuple[float, float]] = []
+        # Letzter langer Tastendruck je Rollladen (Wiederholungen beim Halten).
+        self._lang_zuletzt: dict[str, float] = {}
 
         self.rechner = Rechner(self, self._global())
 
@@ -380,7 +383,11 @@ class Anlage:
         art = neu.attributes.get("event_type")
         for r in self._taster.get(event.data["entity_id"], []):
             if art == r.taster_lang:
-                self._taster_fahren(r, lang=True)
+                jetzt = self.hass.loop.time()
+                wiederholt = lang_wiederholung(self._lang_zuletzt.get(r.id), jetzt)
+                self._lang_zuletzt[r.id] = jetzt
+                if not wiederholt:
+                    self._taster_fahren(r, lang=True)
             elif art == r.taster_kurz:
                 self._taster_fahren(r, lang=False)
         self._abschluss()

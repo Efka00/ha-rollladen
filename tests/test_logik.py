@@ -608,5 +608,24 @@ class TestLuxMittel(unittest.TestCase):
                          (2 * 200 + 3 * 100) / 300)
 
 
+
+class TestLangerDruck(unittest.TestCase):
+    """press_long kommt beim Halten etwa alle 0,3 s erneut."""
+
+    def test_erster_druck_zaehlt(self):
+        self.assertFalse(L.lang_wiederholung(None, 100.0))
+
+    def test_halten_ist_ein_druck(self):
+        zuletzt, gezaehlt = None, 0
+        for t in (10.57, 10.79, 11.19, 11.29, 11.55, 11.94):
+            if not L.lang_wiederholung(zuletzt, t):
+                gezaehlt += 1
+            zuletzt = t
+        self.assertEqual(gezaehlt, 1)
+
+    def test_neuer_druck_nach_pause(self):
+        self.assertFalse(L.lang_wiederholung(10.0, 12.0))
+
+
 if __name__ == "__main__":
     unittest.main()

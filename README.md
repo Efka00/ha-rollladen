@@ -4,7 +4,7 @@ Custom Integration für [Home Assistant](https://www.home-assistant.io/) zur Ste
 
 Die Integration fährt die Rollläden selbst: morgens hoch und abends runter nach Uhrzeit, Helligkeit oder Sonnenstand. Sie beschattet bei Sonne, folgt dem Fenstergriff, schützt Türen vor dem Aussperren, erkennt Handbetrieb, bedient die Wandtaster und passt bei Frost auf. Alles wird in der Oberfläche von Home Assistant eingerichtet. Es sind keine Helfer, Automationen oder YAML nötig.
 
-> **Stand:** Version 0.1.2, erste Fassung. Die Logik ist ein Port der AppDaemon-App „ASC“ (v0.27) und mit Tests abgesichert, im Alltag aber noch nicht erprobt. Die Oberfläche ist nur auf Deutsch.
+> **Stand:** Version 0.1.3, erste Fassung. Die Logik ist ein Port der AppDaemon-App „ASC“ (v0.27) und mit Tests abgesichert, im Alltag aber noch nicht erprobt. Die Oberfläche ist nur auf Deutsch.
 
 ---
 
@@ -200,7 +200,7 @@ Ausgewertet wird jede Minute und sofort bei Änderungen (Helligkeit, Anwesenheit
 | kurz | ganz zu → **auf**, sonst → **zu** | **Gegenrichtung** |
 | lang | **Stopp** | **Stopp** |
 
-Im Zweifel zweimal drücken: Der erste Druck fährt zu, der zweite kehrt um. Tasterfahrten sind Handfahrten (Handsperre, Frostfreigabe) und funktionieren auch bei ausgeschalteter Automatik.
+Im Zweifel zweimal drücken: Der erste Druck fährt zu, der zweite kehrt um. Homematic IP sendet `press_long` beim Halten etwa alle 0,3 s erneut. Die Integration stoppt beim ersten und zählt die Wiederholungen nicht mit, langes Halten ist ein einziger Stopp. Tasterfahrten sind Handfahrten (Handsperre, Frostfreigabe) und funktionieren auch bei ausgeschalteter Automatik.
 
 ---
 
@@ -226,7 +226,7 @@ Die Integration startet mit Automatik aus. Rollladen für Rollladen umstellen:
 | Rollladen | Cover | Taster | Griff | Tür | offen | Azimut |
 |---|---|---|---|---|---|---|
 | Abstellkammer | `cover.eg_ak_ro` | `event.hmipw_e01_eg_ak_tt_s2` | `sensor.hmip_eg_ak_fk` | | 80 | 45–135 |
-| Gäste-WC | `cover.eg_wc_ro` | `event.hmipw_e01_eg_wc_tt_s2` (lang: `press_long_release`) | `sensor.hmip_eg_wc_fk` | | 80 | 315–359 |
+| Gäste-WC | `cover.eg_wc_ro` | `event.hmipw_e01_eg_wc_tt_s2` | `sensor.hmip_eg_wc_fk` | | 80 | 315–359 |
 | Küche | `cover.eg_kz_ro` | `event.hmipw_e01_eg_kz_tt1_s1`, `event.hmipw_e02_eg_kz_tt2_s1` | `sensor.hmip_eg_kz_fk` | | 80 | 45–135 |
 | Wohnzimmer Süd | `cover.eg_wz_ro1` | `event.hmipw_e02_eg_wz_tt1_s1` | `sensor.hmip_eg_wz_fk1` | | 80 | 105–230 |
 | Wohnzimmer Essecke | `cover.eg_wz_ro2` | `event.hmipw_e02_eg_wz_tt1_s3` | `sensor.hmip_eg_wz_fk2` | ja | 100 | 205–270 |
@@ -279,6 +279,7 @@ python3 -m unittest discover -s tests -v
 
 ## Versionen
 
+- **0.1.3** (20.11.2026): Langer Tastendruck stoppt genau einmal, auch wenn `press_long` beim Halten wiederholt kommt. Gäste-WC ohne Sonderregel.
 - **0.1.2** (20.11.2026): Helligkeit als zeitgewichteter Mittelwert (Vorgabe 5 min), damit Ausreißer des Sensors nichts auslösen. Kurze Sensorausfälle überbrückt der letzte Wert.
 - **0.1.1** (20.11.2026): Diagnose-Sensor „Cover“ mit Befehlsprotokoll. Anwesenheit als Mehrfachauswahl der Personen. Griffsensor `unavailable`/`unknown` löst keine Fahrt mehr aus (bisher fuhr ein gekipptes Fenster nachts beim Neustart kurz zu). 1,5 s Abstand zwischen Automatik-Fahrten, keine Fahrbefehle beim Herunterfahren. Umbenannte Entities werden übernommen, fehlende unter „Reparaturen“ gemeldet. Entity-IDs ohne doppelten Raumnamen: Der Bereich kommt erst nach dem Anlegen ans Gerät.
 - **0.1.0** (20.11.2026): Erste Fassung. Port von ASC v0.27 mit Taster, Frostschutz (Nässeprüfung) und Speicherung von Handsperre und Beschattung. Korrektur gegenüber ASC: Ohne Helligkeitswert fährt „Helligkeit“ jetzt wirklich zum Sonnenaufgang statt erst zur Spätzeit.

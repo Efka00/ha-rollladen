@@ -36,7 +36,7 @@ Alle 13 Innenrollläden: Plattform `hbw_modbus` (eigene Integration), `device_cl
 |---|---|---|---|---|
 | `cover.eg_ak_ro` | Abstellkammer | A05/2 | `event.hmipw_e01_eg_ak_tt_s2` | Abstellkammer |
 | `cover.eg_kz_ro` | Küche | A05/3 | `event.hmipw_e01_eg_kz_tt1_s1` + `event.hmipw_e02_eg_kz_tt2_s1` | Küche |
-| `cover.eg_wc_ro` | Gäste-WC | A05/4 | `event.hmipw_e01_eg_wc_tt_s2` (lang = **`press_long_release`**) | Gäste-WC |
+| `cover.eg_wc_ro` | Gäste-WC | A05/4 | `event.hmipw_e01_eg_wc_tt_s2` (Altsystem: lang = `press_long_release`) | Gäste-WC |
 | `cover.eg_wz_ro1` | WZ Süden | A05/1 | `event.hmipw_e02_eg_wz_tt1_s1` | Wohnzimmer |
 | `cover.eg_wz_ro2` | WZ Essecke | A06/2 | `event.hmipw_e02_eg_wz_tt1_s3` | Wohnzimmer |
 | `cover.eg_wz_ro3` | WZ Terrasse | A06/3 | `event.hmipw_e02_eg_wz_tt1_s5` | Wohnzimmer |
@@ -48,7 +48,7 @@ Alle 13 Innenrollläden: Plattform `hbw_modbus` (eigene Integration), `device_cl
 | `cover.og_sz_ro1` | SZ Süd | A07/4 | `event.hmipw_e02_og_sz_tt_s2` | Schlafzimmer |
 | `cover.og_sz_ro2` | SZ West | A07/1 | `event.hmipw_e02_og_sz_tt_s4` | Schlafzimmer |
 
-Alle Taster sind HmIP-Wired über `homematicip_local`, Events `press_short` / `press_long` (Ausnahme Gäste-WC). Die Küche hat zwei Bedienstellen → die Integration nimmt mehrere Taster je Rollladen.
+Alle Taster sind HmIP-Wired über `homematicip_local`, Events `press_short` / `press_long`. `press_long` kommt beim Halten etwa alle 0,3 s erneut; deshalb nahm die alte WC-Automation `press_long_release`. Die Integration nimmt überall `press_long` und zählt die Wiederholungen nicht. Die Küche hat zwei Bedienstellen → die Integration nimmt mehrere Taster je Rollladen.
 
 Außen (nicht ASC):
 - `cover.au_gt_ro_schuppen`: Shelly, Position, dient als Tür.

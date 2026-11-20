@@ -110,6 +110,8 @@ SPEICHER_DEFAULTS: dict[str, Any] = {
 # Zustände, die nichts über den Griff sagen (Neustart, Funkabbruch).
 UNGUELTIG = (None, "", "unavailable", "unknown")
 PROTOKOLL_LAENGE = 12
+# Homematic IP sendet press_long beim Halten etwa alle 0,3 s erneut.
+LANG_WIEDERHOLUNG_S = 1.0
 
 
 # ----------------------------------------------------------------------
@@ -204,6 +206,12 @@ def jemand_da(zustaende: list[str | None]) -> bool:
     if any(z in ("on", "home") for z in zustaende):
         return True
     return not zustaende or any(z in UNGUELTIG for z in zustaende)
+
+
+def lang_wiederholung(zuletzt: float | None, jetzt: float) -> bool:
+    """Ist dieser lange Druck nur die Wiederholung beim Halten? Zählt ab dem
+    letzten Ereignis, langes Halten bleibt also ein einziger Druck."""
+    return zuletzt is not None and 0 <= jetzt - zuletzt < LANG_WIEDERHOLUNG_S
 
 
 def griff_wechsel(zuletzt: str | None, roh: str | None) -> bool:
