@@ -1,0 +1,198 @@
+{
+  "config": {
+    "abort": {
+      "single_instance_allowed": "Rollladen ist bereits eingerichtet."
+    },
+    "step": {
+      "user": {
+        "title": "Rollladen einrichten",
+        "description": "Globale Einstellungen für alle Rollläden. Rollläden legst du danach unter „Konfigurieren“ an. Die Automatik startet ausgeschaltet.",
+        "data": {
+          "lux_sensor": "Helligkeitssensor",
+          "anwesenheit": "Anwesenheit",
+          "temperatur": "Außentemperatur",
+          "beschattung_pos": "Beschattungsposition",
+          "min_elevation": "Sonnenhöhe mindestens",
+          "min_temp": "Beschatten ab Außentemperatur",
+          "sonnig_lux": "Beschatten ab Helligkeit",
+          "bewoelkt_lux": "Entschatten unter Helligkeit",
+          "beschattung_wartezeit": "Mindestabstand Beschattung",
+          "notify_dienst": "Push-Nachrichten an"
+        },
+        "data_description": {
+          "lux_sensor": "Gemeinsamer Außen-Helligkeitssensor für Fahrmodus „Helligkeit“ und Beschattung.",
+          "anwesenheit": "An/zuhause = jemand da. Leer oder unklar = jemand da.",
+          "temperatur": "Für Beschattung und Frostschutz.",
+          "beschattung_pos": "Auf diese Position fährt ein Rollladen beim Beschatten.",
+          "min_elevation": "Darunter wird nicht beschattet.",
+          "min_temp": "Darunter wird nicht beschattet.",
+          "sonnig_lux": "Ab dieser Helligkeit wird beschattet.",
+          "bewoelkt_lux": "Erst darunter wird wieder geöffnet (Hysterese).",
+          "beschattung_wartezeit": "So lange mindestens zwischen zwei Beschattungs-Entscheidungen wegen der Helligkeit.",
+          "notify_dienst": "Handys aus der Companion-App, die Meldungen (z. B. Frostschutz) bekommen. Mehrere möglich. Leer = nur Log."
+        }
+      }
+    }
+  },
+  "options": {
+    "error": {
+      "cover_vergeben": "Dieses Cover gehört schon zu einem anderen Rollladen.",
+      "azimut_paar": "Azimut von und bis nur zusammen angeben (oder beide leer = keine Beschattung).",
+      "azimut_reihenfolge": "Azimut bis muss größer als Azimut von sein.",
+      "tuer_ohne_griff": "Eine Tür braucht einen Griffsensor."
+    },
+    "step": {
+      "init": {
+        "title": "Rollladen",
+        "description": "Hier stellst du die Anlage ein und verwaltest die Rollläden. Automatik, Zeiten, Fahrmodus, Anwesenheit und Beschattung änderst du direkt an den Entities des jeweiligen Rollladens.",
+        "menu_options": {
+          "anlage": "Anlage einstellen",
+          "frost": "Frostschutz",
+          "rollladen_neu": "Rollladen hinzufügen",
+          "rollladen_bearbeiten": "Rollladen bearbeiten",
+          "rollladen_loeschen": "Rollläden löschen"
+        }
+      },
+      "anlage": {
+        "title": "Anlage",
+        "description": "Globale Einstellungen, gelten für alle Rollläden.",
+        "data": {
+          "lux_sensor": "Helligkeitssensor",
+          "anwesenheit": "Anwesenheit",
+          "temperatur": "Außentemperatur",
+          "beschattung_pos": "Beschattungsposition",
+          "min_elevation": "Sonnenhöhe mindestens",
+          "min_temp": "Beschatten ab Außentemperatur",
+          "sonnig_lux": "Beschatten ab Helligkeit",
+          "bewoelkt_lux": "Entschatten unter Helligkeit",
+          "beschattung_wartezeit": "Mindestabstand Beschattung",
+          "notify_dienst": "Push-Nachrichten an"
+        },
+        "data_description": {
+          "lux_sensor": "Gemeinsamer Außen-Helligkeitssensor für Fahrmodus „Helligkeit“ und Beschattung.",
+          "anwesenheit": "An/zuhause = jemand da. Leer oder unklar = jemand da.",
+          "temperatur": "Für Beschattung und Frostschutz.",
+          "beschattung_pos": "Auf diese Position fährt ein Rollladen beim Beschatten.",
+          "min_elevation": "Darunter wird nicht beschattet.",
+          "min_temp": "Darunter wird nicht beschattet.",
+          "sonnig_lux": "Ab dieser Helligkeit wird beschattet.",
+          "bewoelkt_lux": "Erst darunter wird wieder geöffnet (Hysterese).",
+          "beschattung_wartezeit": "So lange mindestens zwischen zwei Beschattungs-Entscheidungen wegen der Helligkeit.",
+          "notify_dienst": "Handys aus der Companion-App, die Meldungen (z. B. Frostschutz) bekommen. Mehrere möglich. Leer = nur Log."
+        }
+      },
+      "frost": {
+        "title": "Frostschutz",
+        "description": "Eingeschaltet wird der Frostschutz mit dem Schalter „Frostschutz“, die Temperaturschwelle steht an der Entity „Frostschutz unter“. Er greift, wenn es kalt UND nass ist: Dann öffnet die Automatik höchstens bis zur Frostposition und wartet auf einen Handbefehl. Jede Handfahrt gibt den Rollladen bis Tagesende frei. Ohne jede Nässequelle zählt nur die Temperatur.",
+        "data": {
+          "frost_pos": "Frostposition",
+          "frost_hysterese": "Hysterese",
+          "frost_stunden": "Nässe der letzten",
+          "niederschlag": "Niederschlagssensor",
+          "feuchte": "Luftfeuchtesensor",
+          "feuchte_schwelle": "Feucht ab",
+          "wetter": "Wetter"
+        },
+        "data_description": {
+          "frost_pos": "Höchstens so weit öffnet die Automatik bei Frost. 10 % = Lüftungsschlitze offen, Endleiste liegt noch auf.",
+          "frost_hysterese": "Kalt endet erst so viel über der Schwelle.",
+          "frost_stunden": "So weit zurück zählt Nässe.",
+          "niederschlag": "Optional. Wert über 0 (z. B. Niederschlag der letzten Stunde) = Niederschlag. Fällt der Sensor aus, gilt es als nass.",
+          "feuchte": "Optional. Zählt nur zusammen mit Plusgraden: über 0 °C und Luftfeuchte ab der Schwelle = nass.",
+          "feuchte_schwelle": "Ab dieser Luftfeuchte (bei Plusgraden) gilt es als nass.",
+          "wetter": "Optional. Regen, Schnee oder Hagel in der Wetter-Entity zählen als Niederschlag (hilft bei Schnee, den ein unbeheizter Regenmesser erst beim Tauen zählt)."
+        }
+      },
+      "rollladen_neu": {
+        "title": "Rollladen hinzufügen",
+        "description": "Ein Rollladen = ein Cover mit Position. Automatik und Zeiten stellst du danach an den Entities ein. Neue Rollläden starten mit Automatik aus.",
+        "data": {
+          "name": "Name",
+          "cover": "Cover",
+          "taster": "Taster",
+          "taster_kurz": "Ereignis kurz",
+          "taster_lang": "Ereignis lang",
+          "griff": "Fenstergriff",
+          "tuer": "Tür (Aussperrschutz)",
+          "gekippt_pos": "Position bei gekipptem Fenster",
+          "griff_offen_pos": "Position bei offenem Fenster",
+          "azimut_von": "Beschattung ab Azimut",
+          "azimut_bis": "Beschattung bis Azimut",
+          "sperre_minuten": "Handsperre",
+          "block_morgen_minuten": "Vor der Morgenfahrt nicht zufahren",
+          "block_abend_minuten": "Vor der Abendfahrt nicht auffahren",
+          "frostschutz": "Frostschutz"
+        },
+        "data_description": {
+          "name": "Gerätename, z. B. WZ Süden.",
+          "cover": "Der Rollladen. Muss Positionen können (0 = zu, 100 = auf).",
+          "taster": "Optional, mehrere möglich. Event-Entities der Taster. Kurz: zu, ganz zu → auf, während der Fahrt → Gegenrichtung. Lang: Stopp.",
+          "taster_kurz": "event_type für kurzen Druck (Homematic IP: press_short).",
+          "taster_lang": "event_type für langen Druck (Homematic IP: press_long).",
+          "griff": "Optional. Griffsensor mit closed / tilted / open. In der Zu-Phase folgt der Rollladen dem Griff.",
+          "tuer": "Bei offenem oder unbekanntem Griff keine Fahrt unter 100 %. Tür öffnen fährt sofort ganz auf.",
+          "gekippt_pos": "Lüftungsposition in der Zu-Phase.",
+          "griff_offen_pos": "Position in der Zu-Phase bei offenem Fenster (Tür: 100).",
+          "azimut_von": "Beide leer = keine Beschattung für diesen Rollladen.",
+          "azimut_bis": "Sonnenrichtung in Grad, Süd = 180. Kein Bereich über 0°.",
+          "sperre_minuten": "Nach einer Handfahrt in der Zu-Phase ruht die Automatik so lange und fährt danach zurück.",
+          "block_morgen_minuten": "Griff und Rückfahrt schließen so kurz vor der Morgenfahrt nicht mehr.",
+          "block_abend_minuten": "Griff und Rückfahrt öffnen so kurz vor der Abendfahrt nicht mehr.",
+          "frostschutz": "Aus z. B. für Türen unter einem Dach, die nicht anfrieren."
+        }
+      },
+      "rollladen_bearbeiten": {
+        "title": "Rollladen bearbeiten",
+        "description": "Rollladen auswählen, dessen Einstellungen du ändern willst.",
+        "data": {
+          "rollladen": "Rollladen"
+        }
+      },
+      "rollladen_daten": {
+        "title": "{rollladen} bearbeiten",
+        "description": "Automatik und Zeiten stellst du an den Entities ein.",
+        "data": {
+          "name": "Name",
+          "cover": "Cover",
+          "taster": "Taster",
+          "taster_kurz": "Ereignis kurz",
+          "taster_lang": "Ereignis lang",
+          "griff": "Fenstergriff",
+          "tuer": "Tür (Aussperrschutz)",
+          "gekippt_pos": "Position bei gekipptem Fenster",
+          "griff_offen_pos": "Position bei offenem Fenster",
+          "azimut_von": "Beschattung ab Azimut",
+          "azimut_bis": "Beschattung bis Azimut",
+          "sperre_minuten": "Handsperre",
+          "block_morgen_minuten": "Vor der Morgenfahrt nicht zufahren",
+          "block_abend_minuten": "Vor der Abendfahrt nicht auffahren",
+          "frostschutz": "Frostschutz"
+        },
+        "data_description": {
+          "name": "Gerätename, z. B. WZ Süden.",
+          "cover": "Der Rollladen. Muss Positionen können (0 = zu, 100 = auf).",
+          "taster": "Optional, mehrere möglich. Event-Entities der Taster. Kurz: zu, ganz zu → auf, während der Fahrt → Gegenrichtung. Lang: Stopp.",
+          "taster_kurz": "event_type für kurzen Druck (Homematic IP: press_short).",
+          "taster_lang": "event_type für langen Druck (Homematic IP: press_long).",
+          "griff": "Optional. Griffsensor mit closed / tilted / open. In der Zu-Phase folgt der Rollladen dem Griff.",
+          "tuer": "Bei offenem oder unbekanntem Griff keine Fahrt unter 100 %. Tür öffnen fährt sofort ganz auf.",
+          "gekippt_pos": "Lüftungsposition in der Zu-Phase.",
+          "griff_offen_pos": "Position in der Zu-Phase bei offenem Fenster (Tür: 100).",
+          "azimut_von": "Beide leer = keine Beschattung für diesen Rollladen.",
+          "azimut_bis": "Sonnenrichtung in Grad, Süd = 180. Kein Bereich über 0°.",
+          "sperre_minuten": "Nach einer Handfahrt in der Zu-Phase ruht die Automatik so lange und fährt danach zurück.",
+          "block_morgen_minuten": "Griff und Rückfahrt schließen so kurz vor der Morgenfahrt nicht mehr.",
+          "block_abend_minuten": "Griff und Rückfahrt öffnen so kurz vor der Abendfahrt nicht mehr.",
+          "frostschutz": "Aus z. B. für Türen unter einem Dach, die nicht anfrieren."
+        }
+      },
+      "rollladen_loeschen": {
+        "title": "Rollläden löschen",
+        "description": "Entfernt die gewählten Rollläden samt Gerät und Entities. Das Cover selbst bleibt.",
+        "data": {
+          "rollladen": "Rollläden"
+        }
+      }
+    }
+  }
+}

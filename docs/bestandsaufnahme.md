@@ -35,20 +35,20 @@ Alle 13 Innenrollläden: Plattform `hbw_modbus` (eigene Integration), `device_cl
 | Cover | ASC-Name | HBW-Kanal | Taster (Event-Entity) | Area |
 |---|---|---|---|---|
 | `cover.eg_ak_ro` | Abstellkammer | A05/2 | `event.hmipw_e01_eg_ak_tt_s2` | Abstellkammer |
-| `cover.eg_kz_ro` | Küche | A05/3 | ? | Küche |
-| `cover.eg_wc_ro` | Gäste-WC | A05/4 | ? | Gäste-WC |
+| `cover.eg_kz_ro` | Küche | A05/3 | `event.hmipw_e01_eg_kz_tt1_s1` + `event.hmipw_e02_eg_kz_tt2_s1` | Küche |
+| `cover.eg_wc_ro` | Gäste-WC | A05/4 | `event.hmipw_e01_eg_wc_tt_s2` (lang = **`press_long_release`**) | Gäste-WC |
 | `cover.eg_wz_ro1` | WZ Süden | A05/1 | `event.hmipw_e02_eg_wz_tt1_s1` | Wohnzimmer |
-| `cover.eg_wz_ro2` | WZ Essecke | A06/2 | ? | Wohnzimmer |
-| `cover.eg_wz_ro3` | WZ Terrasse | A06/3 | ? | Wohnzimmer |
-| `cover.eg_wz_ro4` | WZ Couch | A06/4 | ? | Wohnzimmer |
-| `cover.og_bad_ro` | Bad | A10 | ? | Badezimmer |
-| `cover.og_kiz1_ro` | KiZ1 | A06/1 | ? | KiZ1 |
+| `cover.eg_wz_ro2` | WZ Essecke | A06/2 | `event.hmipw_e02_eg_wz_tt1_s3` | Wohnzimmer |
+| `cover.eg_wz_ro3` | WZ Terrasse | A06/3 | `event.hmipw_e02_eg_wz_tt1_s5` | Wohnzimmer |
+| `cover.eg_wz_ro4` | WZ Couch | A06/4 | `event.hmipw_e02_eg_wz_tt1_s7` | Wohnzimmer |
+| `cover.og_bad_ro` | Bad | A10 | `event.hmipw_e02_og_bad_tt_s1` | Badezimmer |
+| `cover.og_kiz1_ro` | KiZ1 | A06/1 | `event.hmipw_e03_og_kiz1_tt_s2` | KiZ1 |
 | `cover.og_kiz2_ro1` | KiZ2 West | A07/2 | `event.hmipw_e03_og_kiz2_tt_s1` | Ankleide |
-| `cover.og_kiz2_ro2` | KiZ2 Nord | A07/3 | ? | Ankleide |
+| `cover.og_kiz2_ro2` | KiZ2 Nord | A07/3 | `event.hmipw_e03_og_kiz2_tt_s3` | Ankleide |
 | `cover.og_sz_ro1` | SZ Süd | A07/4 | `event.hmipw_e02_og_sz_tt_s2` | Schlafzimmer |
-| `cover.og_sz_ro2` | SZ West | A07/1 | ? | Schlafzimmer |
+| `cover.og_sz_ro2` | SZ West | A07/1 | `event.hmipw_e02_og_sz_tt_s4` | Schlafzimmer |
 
-`?` = Automation noch nicht im Detail gelesen. Alle Taster sind HmIP-Wired über `homematicip_local`, Events `press_short` / `press_long`.
+Alle Taster sind HmIP-Wired über `homematicip_local`, Events `press_short` / `press_long` (Ausnahme Gäste-WC). Die Küche hat zwei Bedienstellen → die Integration nimmt mehrere Taster je Rollladen.
 
 Außen (nicht ASC):
 - `cover.au_gt_ro_schuppen`: Shelly, Position, dient als Tür.
@@ -183,11 +183,13 @@ Handsperre (`_block_until`), Beschattung aktiv, zuletzt kommandierte Position, V
 ## Offene Punkte
 
 - [x] AppDaemon-Quelle liegt vor (`Altsystem/asc_rollladen.py` v0.27). `apps.yaml` fehlt, alle Einstellungen stehen aber in der `.py`.
-- [ ] Taster-Zuordnung der übrigen 9 Rollläden auslesen.
+- [x] Taster-Zuordnung aller 13 Rollläden ausgelesen (Tabelle oben).
 - [x] Schuppen und Terrasse: nein, nur Innenrollläden.
 - [x] Komfortfunktion Schlafzimmer: bleibt in der Licht-Automation, zählt als Handbetrieb (wie heute).
 - [x] Migration: über den Automatik-Schalter je Rollladen, keine Werteübernahme.
-- [ ] Dashboards prüfen, die Merker, ASC-Helfer oder `sensor.asc_info_*` zeigen.
+- [x] Dashboards geprüft (20.11.), noch nicht angepasst:
+  - `dashboard-hardware`, View 16: komplette ASC-Seite (Markdown-Tabelle über `sensor.asc_info_*`, Master/Lux/Beschattung, je Rollladen Auto, Selects, Zeiten, letzte Fahrten; 104 Karten).
+  - `dashboard-hausubersicht`: 9 Merker-Kacheln (`input_select.*_merker`) in den Raumabschnitten.
 
 ### Entwurfsentscheidungen (20.11.2026, mit Martin)
 

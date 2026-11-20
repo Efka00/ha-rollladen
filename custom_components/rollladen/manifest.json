@@ -1,13 +1,19 @@
 {
   "domain": "rollladen",
   "name": "Rollladen",
-  "codeowners": ["@Efka00"],
-  "config_flow": false,
+  "after_dependencies": [
+    "sun"
+  ],
+  "codeowners": [
+    "@Efka00"
+  ],
+  "config_flow": true,
   "dependencies": [],
   "documentation": "https://github.com/Efka00/ha-rollladen",
   "integration_type": "hub",
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/Efka00/ha-rollladen/issues",
   "requirements": [],
-  "version": "0.0.0"
+  "single_config_entry": true,
+  "version": "0.1.0"
 }
