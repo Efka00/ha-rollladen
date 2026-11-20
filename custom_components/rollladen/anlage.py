@@ -59,6 +59,7 @@ from .const import (
     CONF_GEKIPPT_POS,
     CONF_GRIFF,
     CONF_GRIFF_OFFEN_POS,
+    CONF_LUX_MITTEL,
     CONF_LUX_SENSOR,
     CONF_MIN_ELEVATION,
     CONF_MIN_TEMP,
@@ -79,6 +80,7 @@ from .const import (
     ENTITY_KEYS_ANLAGE,
     ENTITY_KEYS_ROLLLADEN,
     FAHR_ABSTAND,
+    LUX_AUSFALL_SEKUNDEN,
     ROLLLADEN_DEFAULTS,
     START_VERZOEGERUNG,
     ZYKLUS_SEKUNDEN,
@@ -94,6 +96,8 @@ from .logik import (
     griff_wechsel,
     griff_wert,
     jemand_da as logik_jemand_da,
+    lux_mittel,
+    lux_proben_kuerzen,
     protokoll_neu,
     taster_aktion,
 )
@@ -148,6 +152,8 @@ class Anlage:
         # Fahrabstand: frühester Start der nächsten Automatik-Fahrt.
         self._frei_ab = 0.0
         self._wartend: list[CALLBACK_TYPE] = []
+        # Helligkeit: (Zeitstempel, Wert) für den gleitenden Mittelwert.
+        self._lux_proben: list[tuple[float, float]] = []
 
         self.rechner = Rechner(self, self._global())
 
@@ -221,6 +227,7 @@ class Anlage:
                                   o.get(CONF_NIEDERSCHLAG), o.get(CONF_FEUCHTE),
                                   o.get(CONF_WETTER)) if e]
         global_ids += _liste(o.get(CONF_ANWESENHEIT))
+        self._lux_probe()
         if global_ids:
             self._abmelden.append(async_track_state_change_event(
                 self.hass, global_ids, self._on_global))
@@ -316,8 +323,25 @@ class Anlage:
         self.benachrichtigen()
 
     @callback
-    def _on_global(self, _event: Event[EventStateChangedData]) -> None:
+    def _on_global(self, event: Event[EventStateChangedData]) -> None:
+        if event.data["entity_id"] == self.opt.get(CONF_LUX_SENSOR):
+            self._lux_probe()
         self.zyklus()
+
+    @callback
+    def _lux_probe(self) -> None:
+        """Aktuellen Helligkeitswert in die Proben übernehmen."""
+        entity_id = self.opt.get(CONF_LUX_SENSOR)
+        st = self.hass.states.get(entity_id) if entity_id else None
+        wert = self._zahl(entity_id)
+        if st is None or wert is None:
+            return
+        self._lux_proben.append((st.last_updated.timestamp(), wert))
+        self._lux_proben = lux_proben_kuerzen(
+            self._lux_proben, dt_util.utcnow().timestamp(), self._lux_fenster())
+
+    def _lux_fenster(self) -> float:
+        return float(self.opt[CONF_LUX_MITTEL]) * 60
 
     @callback
     def _on_cover(self, event: Event[EventStateChangedData]) -> None:
@@ -468,7 +492,18 @@ class Anlage:
                 and bool(self.frost.get("nass")))
 
     def lux(self) -> float | None:
-        return self._zahl(self.opt.get(CONF_LUX_SENSOR))
+        """Gleitender Mittelwert der Helligkeit (Ausreißer zählen wenig).
+        Kurze Ausfälle überbrückt der letzte Wert, lange gelten als „kein
+        Wert“."""
+        entity_id = self.opt.get(CONF_LUX_SENSOR)
+        st = self.hass.states.get(entity_id) if entity_id else None
+        if st is None:
+            return None
+        jetzt = dt_util.utcnow().timestamp()
+        if (st.state in UNGUELTIG
+                and jetzt - st.last_changed.timestamp() > LUX_AUSFALL_SEKUNDEN):
+            return None
+        return lux_mittel(self._lux_proben, jetzt, self._lux_fenster())
 
     def lux_hoch(self) -> float:
         return float(self.a["lux_hoch"])

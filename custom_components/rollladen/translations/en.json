@@ -16,6 +16,7 @@
           "min_temp": "Beschatten ab Außentemperatur",
           "sonnig_lux": "Beschatten ab Helligkeit",
           "bewoelkt_lux": "Entschatten unter Helligkeit",
+          "lux_mittel": "Helligkeit mitteln über",
           "beschattung_wartezeit": "Mindestabstand Beschattung",
           "notify_dienst": "Push-Nachrichten an"
         },
@@ -28,6 +29,7 @@
           "min_temp": "Darunter wird nicht beschattet.",
           "sonnig_lux": "Ab dieser Helligkeit wird beschattet.",
           "bewoelkt_lux": "Erst darunter wird wieder geöffnet (Hysterese).",
+          "lux_mittel": "Zeitgewichteter Mittelwert, damit ein einzelner Ausreißer (z. B. 0 lx nach einem Neustart des Sensors) nichts auslöst. Gilt für Fahrmodus „Helligkeit“ und Beschattung. 0 = letzter Wert.",
           "beschattung_wartezeit": "So lange mindestens zwischen zwei Beschattungs-Entscheidungen wegen der Helligkeit.",
           "notify_dienst": "Handys aus der Companion-App, die Meldungen (z. B. Frostschutz) bekommen. Mehrere möglich. Leer = nur Log."
         }
@@ -65,6 +67,7 @@
           "min_temp": "Beschatten ab Außentemperatur",
           "sonnig_lux": "Beschatten ab Helligkeit",
           "bewoelkt_lux": "Entschatten unter Helligkeit",
+          "lux_mittel": "Helligkeit mitteln über",
           "beschattung_wartezeit": "Mindestabstand Beschattung",
           "notify_dienst": "Push-Nachrichten an"
         },
@@ -77,6 +80,7 @@
           "min_temp": "Darunter wird nicht beschattet.",
           "sonnig_lux": "Ab dieser Helligkeit wird beschattet.",
           "bewoelkt_lux": "Erst darunter wird wieder geöffnet (Hysterese).",
+          "lux_mittel": "Zeitgewichteter Mittelwert, damit ein einzelner Ausreißer (z. B. 0 lx nach einem Neustart des Sensors) nichts auslöst. Gilt für Fahrmodus „Helligkeit“ und Beschattung. 0 = letzter Wert.",
           "beschattung_wartezeit": "So lange mindestens zwischen zwei Beschattungs-Entscheidungen wegen der Helligkeit.",
           "notify_dienst": "Handys aus der Companion-App, die Meldungen (z. B. Frostschutz) bekommen. Mehrere möglich. Leer = nur Log."
         }

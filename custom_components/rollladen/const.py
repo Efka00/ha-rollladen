@@ -15,6 +15,7 @@ CONF_MIN_TEMP = "min_temp"
 CONF_SONNIG = "sonnig_lux"
 CONF_BEWOELKT = "bewoelkt_lux"
 CONF_WARTEZEIT = "beschattung_wartezeit"
+CONF_LUX_MITTEL = "lux_mittel"
 CONF_FROST_POS = "frost_pos"
 CONF_FROST_HYSTERESE = "frost_hysterese"
 CONF_FROST_STUNDEN = "frost_stunden"
@@ -31,6 +32,7 @@ ANLAGE_DEFAULTS = {
     CONF_SONNIG: 30000,
     CONF_BEWOELKT: 15000,
     CONF_WARTEZEIT: 10,        # Minuten
+    CONF_LUX_MITTEL: 5,        # Minuten, 0 = letzter Wert
     CONF_FROST_POS: 10,
     CONF_FROST_HYSTERESE: 1.0,
     CONF_FROST_STUNDEN: 24,
@@ -78,6 +80,8 @@ ANLAGE_SPEICHER_DEFAULTS = {
 
 # Zykluszeit und Startverzögerung in Sekunden (fest).
 ZYKLUS_SEKUNDEN = 60
+# Fällt der Helligkeitssensor länger aus, gilt „kein Wert“ (Ersatz: Astro).
+LUX_AUSFALL_SEKUNDEN = 900
 START_VERZOEGERUNG = 10
 
 # Abstand zwischen zwei Automatik-Fahrten in Sekunden, damit nicht alle

@@ -571,5 +571,42 @@ class TestJemandDa(unittest.TestCase):
         self.assertTrue(L.jemand_da(["not_home", "unknown"]))
 
 
+
+class TestLuxMittel(unittest.TestCase):
+    """Zeitgewichteter Mittelwert gegen Ausreißer."""
+
+    def test_ohne_proben(self):
+        self.assertIsNone(L.lux_mittel([], 1000, 300))
+
+    def test_ohne_fenster_letzter_wert(self):
+        self.assertEqual(L.lux_mittel([(0, 5000), (100, 0)], 200, 0), 0)
+
+    def test_konstanter_wert(self):
+        self.assertEqual(L.lux_mittel([(0, 4800)], 1000, 300), 4800)
+
+    def test_ausreisser_eine_minute_zaehlt_ein_fuenftel(self):
+        # 4800 lx, dann 60 s lang 0 lx, dann wieder 4800 lx; 5 min Fenster.
+        proben = [(0, 4800), (1000, 0), (1060, 4800)]
+        self.assertAlmostEqual(L.lux_mittel(proben, 1240, 300), 3840)
+
+    def test_ausreisser_frisch_wirkt_kaum(self):
+        # Gerade eben 0 lx gemeldet: nach 30 s erst ein Zehntel davon.
+        proben = [(0, 4800), (1000, 0)]
+        self.assertAlmostEqual(L.lux_mittel(proben, 1030, 300), 4800 * 270 / 300)
+
+    def test_echte_daemmerung_kommt_durch(self):
+        # Seit 5 min dunkel: Mittelwert ist dunkel.
+        proben = [(0, 4800), (1000, 300)]
+        self.assertEqual(L.lux_mittel(proben, 1300, 300), 300)
+
+    def test_kuerzen_behaelt_letzte_probe_vor_fenster(self):
+        proben = [(0, 1), (100, 2), (900, 3)]
+        self.assertEqual(L.lux_proben_kuerzen(proben, 1000, 300),
+                         [(100, 2), (900, 3)])
+        self.assertEqual(L.lux_mittel(L.lux_proben_kuerzen(proben, 1000, 300),
+                                      1000, 300),
+                         (2 * 200 + 3 * 100) / 300)
+
+
 if __name__ == "__main__":
     unittest.main()

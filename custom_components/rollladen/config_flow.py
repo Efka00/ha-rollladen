@@ -55,6 +55,7 @@ from .const import (
     CONF_TEMPERATUR,
     CONF_TUER,
     CONF_WARTEZEIT,
+    CONF_LUX_MITTEL,
     CONF_WETTER,
     DOMAIN,
     ROLLLADEN_DEFAULTS,
@@ -62,7 +63,7 @@ from .const import (
 
 CONF_AUSWAHL = "rollladen"
 
-GANZZAHLEN = (CONF_BESCHATTUNG_POS, CONF_SONNIG, CONF_BEWOELKT, CONF_FROST_POS,
+GANZZAHLEN = (CONF_LUX_MITTEL, CONF_BESCHATTUNG_POS, CONF_SONNIG, CONF_BEWOELKT, CONF_FROST_POS,
               CONF_FEUCHTE_SCHWELLE, CONF_GEKIPPT_POS, CONF_GRIFF_OFFEN_POS,
               CONF_SPERRE_MIN, CONF_BLOCK_MORGEN, CONF_BLOCK_ABEND,
               CONF_WARTEZEIT)
@@ -159,6 +160,8 @@ def _anlage_schema(hass: HomeAssistant, werte: dict[str, Any]) -> vol.Schema:
             _zahl(0, 200000, 500, "lx"),
         vol.Required(CONF_BEWOELKT, default=w[CONF_BEWOELKT]):
             _zahl(0, 200000, 500, "lx"),
+        vol.Required(CONF_LUX_MITTEL, default=w[CONF_LUX_MITTEL]):
+            _zahl(0, 30, 1, "min"),
         vol.Required(CONF_WARTEZEIT, default=w[CONF_WARTEZEIT]):
             _zahl(0, 120, 1, "min"),
         vol.Optional(CONF_NOTIFY, default=als_liste(w.get(CONF_NOTIFY))):

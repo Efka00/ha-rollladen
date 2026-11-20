@@ -60,6 +60,8 @@ class Status(RollladenEntity, SensorEntity):
             "beschattung": rech.beschattung_grund(self.r)
             if self.r.beschattbar else None,
             "frostschutz": rech.frost_greift(self.r),
+            "helligkeit_mittel": round(lux) if (lux := self.anlage.lux())
+            is not None else None,
         }
 
 

@@ -4,7 +4,7 @@ Custom Integration für [Home Assistant](https://www.home-assistant.io/) zur Ste
 
 Die Integration fährt die Rollläden selbst: morgens hoch und abends runter nach Uhrzeit, Helligkeit oder Sonnenstand. Sie beschattet bei Sonne, folgt dem Fenstergriff, schützt Türen vor dem Aussperren, erkennt Handbetrieb, bedient die Wandtaster und passt bei Frost auf. Alles wird in der Oberfläche von Home Assistant eingerichtet. Es sind keine Helfer, Automationen oder YAML nötig.
 
-> **Stand:** Version 0.1.1, erste Fassung. Die Logik ist ein Port der AppDaemon-App „ASC“ (v0.27) und mit Tests abgesichert, im Alltag aber noch nicht erprobt. Die Oberfläche ist nur auf Deutsch.
+> **Stand:** Version 0.1.2, erste Fassung. Die Logik ist ein Port der AppDaemon-App „ASC“ (v0.27) und mit Tests abgesichert, im Alltag aber noch nicht erprobt. Die Oberfläche ist nur auf Deutsch.
 
 ---
 
@@ -88,6 +88,7 @@ Die Integration kann nur einmal eingerichtet werden. Beim Hinzufügen werden die
 | Sonnenhöhe mindestens | 20° | Darunter keine Beschattung. |
 | Beschatten ab Außentemperatur | 18 °C | |
 | Beschatten ab / Entschatten unter Helligkeit | 30 000 / 15 000 lx | Hysterese gegen Flattern. |
+| Helligkeit mitteln über | 5 min | Zeitgewichteter Mittelwert gegen Ausreißer. 0 = letzter Wert. |
 | Mindestabstand Beschattung | 10 min | Zwischen zwei Entscheidungen wegen der Helligkeit. |
 | Push-Nachrichten an | leer | Handys aus der Companion-App, mehrere möglich. |
 
@@ -148,7 +149,7 @@ Neue Rollläden starten mit **Automatik aus**.
 | Fahrmodus hoch / runter | Auswahl | Zeit, Helligkeit, Astro. |
 | Anwesenheit hoch / runter | Auswahl | Immer, Nur wenn niemand da ist, Aus. |
 | Beschattung | Auswahl | Aus, Immer, Nur wenn jemand da ist, Nur wenn niemand da ist (nur mit Azimut). |
-| Status | Sensor | Letzte Aktion mit Grund. Attribute: Phase, Soll, Position, Griff, Tür-Sperre, Handsperre bis, Blocking, Beschattung, Frostschutz. |
+| Status | Sensor | Letzte Aktion mit Grund. Attribute: Phase, Soll, Position, Griff, Tür-Sperre, Handsperre bis, Blocking, Beschattung, Frostschutz, Helligkeit (Mittelwert). |
 | Cover | Sensor (Diagnose) | Das gesteuerte Cover. Attribute: Name, Griff, Taster, `letzter_befehl` und `protokoll` (die letzten 12 Befehle der Integration mit Uhrzeit und Grund, neueste zuerst). Steht eine Fahrt am Cover nicht im Protokoll, kam sie nicht von der Integration. |
 | Phase | Sensor | auf / zu. |
 | Nächste Hochfahrt / Runterfahrt | Zeitstempel | |
@@ -161,6 +162,8 @@ Neue Rollläden starten mit **Automatik aus**.
 ## So entscheidet die Steuerung
 
 Ausgewertet wird jede Minute und sofort bei Änderungen (Helligkeit, Anwesenheit, Griff, Position, Einstellungen).
+
+**Helligkeit.** Fahrmodus „Helligkeit“ und Beschattung rechnen mit dem zeitgewichteten Mittelwert der letzten 5 min (einstellbar). Ein Wert gilt, bis der Sensor den nächsten meldet. Eine einzelne Fehlmeldung, etwa 0 lx nach einem Neustart des Sensors, die eine Minute steht, zählt damit nur zu einem Fünftel. Meldet der Sensor `unavailable` oder `unknown`, gilt der letzte Wert weiter. Erst nach 15 min Ausfall gilt „kein Wert“, und „Helligkeit“ fährt wie „Astro“. Den Mittelwert zeigt der Status im Attribut `helligkeit_mittel`.
 
 **Phase.** Runterfahrt heute gefahren → zu. Hochfahrt heute gefahren → auf. Sonst nach Uhrzeit: auf zwischen Morgen- und Abendziel.
 
@@ -276,6 +279,7 @@ python3 -m unittest discover -s tests -v
 
 ## Versionen
 
+- **0.1.2** (20.11.2026): Helligkeit als zeitgewichteter Mittelwert (Vorgabe 5 min), damit Ausreißer des Sensors nichts auslösen. Kurze Sensorausfälle überbrückt der letzte Wert.
 - **0.1.1** (20.11.2026): Diagnose-Sensor „Cover“ mit Befehlsprotokoll. Anwesenheit als Mehrfachauswahl der Personen. Griffsensor `unavailable`/`unknown` löst keine Fahrt mehr aus (bisher fuhr ein gekipptes Fenster nachts beim Neustart kurz zu). 1,5 s Abstand zwischen Automatik-Fahrten, keine Fahrbefehle beim Herunterfahren. Umbenannte Entities werden übernommen, fehlende unter „Reparaturen“ gemeldet. Entity-IDs ohne doppelten Raumnamen: Der Bereich kommt erst nach dem Anlegen ans Gerät.
 - **0.1.0** (20.11.2026): Erste Fassung. Port von ASC v0.27 mit Taster, Frostschutz (Nässeprüfung) und Speicherung von Handsperre und Beschattung. Korrektur gegenüber ASC: Ohne Helligkeitswert fährt „Helligkeit“ jetzt wirklich zum Sonnenaufgang statt erst zur Spätzeit.
 

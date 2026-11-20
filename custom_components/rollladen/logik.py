@@ -162,6 +162,42 @@ def taster_aktion(lang: bool, status: str | None, position: int | None) -> str:
     return "zu"
 
 
+def lux_mittel(proben: list[tuple[float, float]], jetzt: float,
+               fenster_s: float) -> float | None:
+    """Zeitgewichteter Mittelwert der Helligkeit über die letzten
+    ``fenster_s`` Sekunden.
+
+    ``proben`` = (Zeitstempel, Wert), aufsteigend, nur gültige Werte. Ein
+    Wert gilt bis zur nächsten Probe. Ein Ausreißer, der eine Minute steht,
+    zählt bei 5 min Fenster also nur zu einem Fünftel. Ohne Fenster zählt
+    der letzte Wert.
+    """
+    if not proben:
+        return None
+    if fenster_s <= 0:
+        return proben[-1][1]
+    start = jetzt - fenster_s
+    summe = 0.0
+    dauer = 0.0
+    for i, (t, wert) in enumerate(proben):
+        ende = proben[i + 1][0] if i + 1 < len(proben) else jetzt
+        von = max(t, start)
+        if ende <= von:
+            continue
+        summe += wert * (ende - von)
+        dauer += ende - von
+    return summe / dauer if dauer > 0 else proben[-1][1]
+
+
+def lux_proben_kuerzen(proben: list[tuple[float, float]], jetzt: float,
+                       fenster_s: float) -> list[tuple[float, float]]:
+    """Proben vor dem Fenster weglassen, die letzte davor aber behalten
+    (sie gilt bis zur ersten Probe im Fenster)."""
+    start = jetzt - max(fenster_s, 0)
+    vorher = [p for p in proben if p[0] <= start]
+    return vorher[-1:] + [p for p in proben if p[0] > start]
+
+
 def jemand_da(zustaende: list[str | None]) -> bool:
     """Mindestens eine Person da? Im Zweifel ja: ohne Personen, oder wenn
     eine Person unbekannt ist und keine als zuhause gemeldet ist."""
