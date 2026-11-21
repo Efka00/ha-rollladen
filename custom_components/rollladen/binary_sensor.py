@@ -12,7 +12,7 @@ from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
 from .anlage import Anlage
 from .entity import AnlageEntity, RollladenEntity
-from .logik import Rollladen
+from .logik import Rollladen, frost_status
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry,
@@ -43,6 +43,7 @@ class FrostAktiv(AnlageEntity, BinarySensorEntity):
     def extra_state_attributes(self) -> dict[str, Any]:
         f = self.anlage.frost
         return {
+            "status": frost_status(f, bool(self.anlage.a["frostschutz"])),
             "kalt": bool(f.get("kalt")),
             "nass": bool(f.get("nass")),
             "grund": f.get("grund"),

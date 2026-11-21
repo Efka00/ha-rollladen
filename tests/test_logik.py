@@ -470,6 +470,65 @@ class TestFrostBewertung(unittest.TestCase):
         self.assertTrue(f["kalt"])
 
 
+class TestFrostStatus(unittest.TestCase):
+    """Klartext, warum der Frostschutz greift oder nicht."""
+
+    bewerte = TestFrostBewertung.bewerte
+
+    def status(self, f, ein=True):
+        return L.frost_status(f, ein)
+
+    def test_warm(self) -> None:
+        f = self.bewerte({}, dt(6), temp=4.2)
+        self.assertEqual(self.status(f),
+                         "Nicht aktiv: 4,2 °C, kalt erst unter 1,5 °C")
+
+    def test_hysterese(self) -> None:
+        f = self.bewerte({}, dt(6), temp=1.0)
+        self.bewerte(f, dt(7), temp=2.0)
+        self.assertTrue(self.status(f).startswith(
+            "Nicht aktiv: 2,0 °C, gilt als kalt bis über 2,5 °C"))
+
+    def test_kalt_trocken(self) -> None:
+        f = self.bewerte({}, dt(6), temp=-2.0)
+        self.assertEqual(self.status(f),
+                         "Nicht aktiv: -2,0 °C unter 1,5 °C, aber trocken: "
+                         "kein Niederschlag in 24 h, Feuchte 80 % (ab 90 % über 0 °C)")
+
+    def test_aktiv_regen(self) -> None:
+        f = self.bewerte({}, dt(5), temp=3.0, niederschlag=0.4)
+        self.bewerte(f, dt(6), temp=-1.0, niederschlag=0.0)
+        self.assertEqual(self.status(f),
+                         "Aktiv: -1,0 °C unter 1,5 °C, Niederschlag zuletzt 05:00")
+
+    def test_aktiv_feuchte(self) -> None:
+        f = self.bewerte({}, dt(5), temp=0.5, feuchte=95.0)
+        self.assertEqual(self.status(f),
+                         "Aktiv: 0,5 °C unter 1,5 °C, feucht über 0 °C zuletzt 05:00")
+
+    def test_aktiv_sensor_weg(self) -> None:
+        f = self.bewerte({}, dt(6), niederschlag=None)
+        self.assertEqual(self.status(f),
+                         "Aktiv: 0,0 °C unter 1,5 °C, Niederschlag unbekannt (gilt als nass)")
+
+    def test_ohne_quelle(self) -> None:
+        f = self.bewerte({}, dt(6), niederschlag_quelle=False, feuchte_quelle=False)
+        self.assertIn("keine Nässequelle (gilt als nass)", self.status(f))
+
+    def test_temperatur_unbekannt(self) -> None:
+        f = self.bewerte({}, dt(6), temp=None)
+        self.assertEqual(self.status(f), "Nicht aktiv: Temperatur unbekannt")
+
+    def test_schalter_aus(self) -> None:
+        f = self.bewerte({}, dt(5), temp=-1.0, niederschlag=0.4)
+        self.assertEqual(self.status(f, ein=False),
+                         "Aus: Schalter Frostschutz ist aus (Wetter würde greifen: "
+                         "-1,0 °C unter 1,5 °C, Niederschlag zuletzt 05:00)")
+
+    def test_noch_nie_bewertet(self) -> None:
+        self.assertEqual(self.status({}), "Nicht aktiv: noch keine Bewertung")
+
+
 class TestTaster(unittest.TestCase):
     def test_regeln(self) -> None:
         self.assertEqual(L.taster_aktion(True, "open", 100), "stopp")

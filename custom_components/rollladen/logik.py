@@ -904,3 +904,54 @@ def frost_bewerten(f: dict[str, Any], jetzt: datetime, *,
         f["grund"] = "trocken"
     else:
         f["grund"] = "kalt, " + ", ".join(gruende)
+
+    # Klartext für den Status (frost_status).
+    if temp is None:
+        f["status_kalt"] = ("Temperatur unbekannt, gilt weiter als kalt"
+                            if kalt else "Temperatur unbekannt")
+    elif temp < schwelle:
+        f["status_kalt"] = f"{_grad(temp)} °C unter {_grad(schwelle)} °C"
+    elif kalt:
+        f["status_kalt"] = (f"{_grad(temp)} °C, gilt als kalt bis über "
+                            f"{_grad(schwelle + hysterese)} °C")
+    else:
+        f["status_kalt"] = f"{_grad(temp)} °C, kalt erst unter {_grad(schwelle)} °C"
+
+    nass_texte = []
+    if not (niederschlag_quelle or feuchte_quelle or wetter_quelle):
+        nass_texte.append("keine Nässequelle (gilt als nass)")
+    if niederschlag_quelle and niederschlag is None:
+        nass_texte.append("Niederschlag unbekannt (gilt als nass)")
+    if regen is not None and regen >= grenze:
+        nass_texte.append(f"Niederschlag zuletzt {zeit_text(regen, jetzt)}")
+    if feucht is not None and feucht >= grenze:
+        nass_texte.append(f"feucht über 0 °C zuletzt {zeit_text(feucht, jetzt)}")
+    if not nass_texte:
+        teile = []
+        if niederschlag_quelle or wetter_quelle:
+            teile.append(f"kein Niederschlag in {stunden:g} h")
+        if feuchte_quelle:
+            teile.append(f"Feuchte {feuchte:.0f} % (ab {feuchte_schwelle:.0f} % über 0 °C)"
+                         if feuchte is not None else "Feuchte unbekannt")
+        nass_texte.append("trocken: " + ", ".join(teile))
+    f["status_nass"] = ", ".join(nass_texte)
+
+
+def _grad(wert: float) -> str:
+    return f"{wert:.1f}".replace(".", ",")
+
+
+def frost_status(f: dict[str, Any], eingeschaltet: bool) -> str:
+    """Klartext, warum der Frostschutz greift oder nicht."""
+    if "status_kalt" not in f:
+        wetter, greift = "noch keine Bewertung", False
+    elif not f.get("kalt"):
+        wetter, greift = f["status_kalt"], False
+    elif not f.get("nass"):
+        wetter, greift = f"{f['status_kalt']}, aber {f['status_nass']}", False
+    else:
+        wetter, greift = f"{f['status_kalt']}, {f['status_nass']}", True
+    if not eingeschaltet:
+        return (f"Aus: Schalter Frostschutz ist aus (Wetter würde "
+                f"{'greifen' if greift else 'nicht greifen'}: {wetter})")
+    return ("Aktiv: " if greift else "Nicht aktiv: ") + wetter

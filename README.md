@@ -137,7 +137,7 @@ Neue Rollläden starten mit **Automatik aus**.
 | Frostschutz | Schalter | Frostschutz global an/aus. |
 | Helligkeit hoch ab / runter unter | Zahl | Lux-Schwellen für den Fahrmodus Helligkeit (Standard 700 / 600 lx). |
 | Frostschutz unter | Zahl | Temperaturschwelle (Standard 1,5 °C). |
-| Frostschutz aktiv | Binärsensor | Schalter an, kalt und nass. Attribute: kalt, nass, Grund, letzter Niederschlag. |
+| Frostschutz aktiv | Binärsensor | Schalter an, kalt und nass. Attribut `status` sagt im Klartext, warum er greift oder nicht, z. B. „Nicht aktiv: 4,9 °C, kalt erst unter 1,5 °C“ oder „Aktiv: -1,0 °C unter 1,5 °C, Niederschlag zuletzt 05:00“. Weitere Attribute: kalt, nass, Grund, letzter Niederschlag. |
 
 **Je Rollladen**
 
@@ -279,7 +279,7 @@ python3 -m unittest discover -s tests -v
 
 ## Versionen
 
-- **0.1.6** (21.11.2026): Handbetrieb wird erst nach Fahrtende ausgewertet (3 s Stillstand). Eine Handfahrt ergibt einen Status-Eintrag statt etwa 18.
+- **0.1.6** (21.11.2026): Handbetrieb wird erst nach Fahrtende ausgewertet (3 s Stillstand). Eine Handfahrt ergibt einen Status-Eintrag statt etwa 18. Frostschutz aktiv hat ein Attribut `status` mit Klartext-Begründung.
 - **0.1.5** (20.11.2026): Diagnose-Sensor heißt „Position“ und zeigt die Position des Covers in %. Das Cover steht im Attribut `cover`.
 - **0.1.4** (20.11.2026): Nächste und letzte Fahrten als Uhrzeit („19:00“, „morgen 07:49“) statt „in 8 Stunden“. Genauer Zeitpunkt im Attribut `zeitpunkt`.
 - **0.1.3** (20.11.2026): Langer Tastendruck stoppt genau einmal, auch wenn `press_long` beim Halten wiederholt kommt. Gäste-WC ohne Sonderregel.
