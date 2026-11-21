@@ -80,6 +80,7 @@ from .const import (
     ENTITY_KEYS_ANLAGE,
     ENTITY_KEYS_ROLLLADEN,
     FAHR_ABSTAND,
+    HAND_RUHE_SEKUNDEN,
     LUX_AUSFALL_SEKUNDEN,
     ROLLLADEN_DEFAULTS,
     START_VERZOEGERUNG,
@@ -157,6 +158,9 @@ class Anlage:
         self._lux_proben: list[tuple[float, float]] = []
         # Letzter langer Tastendruck je Rollladen (Wiederholungen beim Halten).
         self._lang_zuletzt: dict[str, float] = {}
+        # Laufende Fahrt je Rollladen: Startposition und Ruhe-Timer.
+        self._fahrt_start: dict[str, Any] = {}
+        self._fahrt_timer: dict[str, CALLBACK_TYPE] = {}
 
         self.rechner = Rechner(self, self._global())
 
@@ -264,10 +268,13 @@ class Anlage:
 
     async def async_stop(self) -> None:
         self.gestartet = False
-        for abmelden in self._abmelden + self._wartend:
+        for abmelden in (self._abmelden + self._wartend
+                         + list(self._fahrt_timer.values())):
             abmelden()
         self._abmelden.clear()
         self._wartend.clear()
+        self._fahrt_timer.clear()
+        self._fahrt_start.clear()
         await self.store.async_save(self.daten)
 
     async def _on_ha_gestartet(self, _hass: HomeAssistant) -> None:
@@ -355,8 +362,30 @@ class Anlage:
         pos_neu = neu.attributes.get("current_position")
         pos_alt = alt.attributes.get("current_position") if alt else None
         if pos_neu is not None and pos_neu != pos_alt:
-            self.rechner.position_geaendert(r, pos_neu, pos_alt)
+            self._fahrt_melden(r, pos_alt)
         self._abschluss()
+
+    @callback
+    def _fahrt_melden(self, r: Rollladen, pos_alt: Any) -> None:
+        """Zwischenstände einer Fahrt sammeln; ausgewertet wird erst, wenn
+        die Position HAND_RUHE_SEKUNDEN still steht."""
+        if r.id not in self._fahrt_start:
+            self._fahrt_start[r.id] = pos_alt
+        if (abbrechen := self._fahrt_timer.pop(r.id, None)) is not None:
+            abbrechen()
+
+        @callback
+        def _ruhe(_now: datetime) -> None:
+            self._fahrt_timer.pop(r.id, None)
+            start = self._fahrt_start.pop(r.id, None)
+            pos = self.position(r)
+            if not self.gestartet or pos is None or pos == start:
+                return
+            self.rechner.position_geaendert(r, pos, start)
+            self._abschluss()
+
+        self._fahrt_timer[r.id] = async_call_later(
+            self.hass, HAND_RUHE_SEKUNDEN, _ruhe)
 
     @callback
     def _on_griff(self, event: Event[EventStateChangedData]) -> None:

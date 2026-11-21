@@ -88,6 +88,11 @@ START_VERZOEGERUNG = 10
 # Motoren gleichzeitig anlaufen (Bus, Anlaufstrom). Taster fahren sofort.
 FAHR_ABSTAND = 1.5
 
+# Handbetrieb erst auswerten, wenn die Position so lange still steht. Das
+# Cover meldet während der Fahrt etwa jede Sekunde einen Zwischenstand; so
+# ergibt eine Fahrt einen einzigen Eintrag statt eines je Zwischenstand.
+HAND_RUHE_SEKUNDEN = 3
+
 # Optionen, die auf Entities verweisen (Umbenennen folgen, Fehlende melden).
 ENTITY_KEYS_ANLAGE = (CONF_LUX_SENSOR, CONF_ANWESENHEIT, CONF_TEMPERATUR,
                       CONF_NIEDERSCHLAG, CONF_FEUCHTE, CONF_WETTER)

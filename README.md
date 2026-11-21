@@ -4,7 +4,7 @@ Custom Integration für [Home Assistant](https://www.home-assistant.io/) zur Ste
 
 Die Integration fährt die Rollläden selbst: morgens hoch und abends runter nach Uhrzeit, Helligkeit oder Sonnenstand. Sie beschattet bei Sonne, folgt dem Fenstergriff, schützt Türen vor dem Aussperren, erkennt Handbetrieb, bedient die Wandtaster und passt bei Frost auf. Alles wird in der Oberfläche von Home Assistant eingerichtet. Es sind keine Helfer, Automationen oder YAML nötig.
 
-> **Stand:** Version 0.1.5, erste Fassung. Die Logik ist ein Port der AppDaemon-App „ASC“ (v0.27) und mit Tests abgesichert, im Alltag aber noch nicht erprobt. Die Oberfläche ist nur auf Deutsch.
+> **Stand:** Version 0.1.6, erste Fassung. Die Logik ist ein Port der AppDaemon-App „ASC“ (v0.27) und mit Tests abgesichert, im Alltag aber noch nicht erprobt. Die Oberfläche ist nur auf Deutsch.
 
 ---
 
@@ -179,7 +179,7 @@ Ausgewertet wird jede Minute und sofort bei Änderungen (Helligkeit, Anwesenheit
 
 **Tür-Sicherung.** Ist der Griff einer Tür nicht `closed`/`tilted` (also auch bei totem Sensor), verweigert die Automatik jede Fahrt unter 100 %. Tür öffnen fährt sofort auf 100 %, egal welche Phase oder Sperre. Handfahrten werden nicht zurückgedreht.
 
-**Handbetrieb.** Eine Positionsänderung, die nicht zum eigenen Befehl passt (außer in den 90 s Fahrzeit danach), gilt als Handfahrt:
+**Handbetrieb.** Eine Positionsänderung, die nicht zum eigenen Befehl passt (außer in den 90 s Fahrzeit danach), gilt als Handfahrt. Ausgewertet wird erst, wenn die Position 3 s still steht, verglichen mit der Position vor der Fahrt. So gibt eine Fahrt einen einzigen Status-Eintrag statt eines je Zwischenstand:
 1. Ganz auf ab 2 h vor „Hoch frühestens“ und vor „Runter frühestens“ → Auf-Phase, keine Sperre.
 2. In der Auf-Phase ohne Beschattung → bleibt stehen.
 3. Nach unten ab „Runter frühestens“ → Zu-Phase und Sperre.
@@ -279,6 +279,7 @@ python3 -m unittest discover -s tests -v
 
 ## Versionen
 
+- **0.1.6** (21.11.2026): Handbetrieb wird erst nach Fahrtende ausgewertet (3 s Stillstand). Eine Handfahrt ergibt einen Status-Eintrag statt etwa 18.
 - **0.1.5** (20.11.2026): Diagnose-Sensor heißt „Position“ und zeigt die Position des Covers in %. Das Cover steht im Attribut `cover`.
 - **0.1.4** (20.11.2026): Nächste und letzte Fahrten als Uhrzeit („19:00“, „morgen 07:49“) statt „in 8 Stunden“. Genauer Zeitpunkt im Attribut `zeitpunkt`.
 - **0.1.3** (20.11.2026): Langer Tastendruck stoppt genau einmal, auch wenn `press_long` beim Halten wiederholt kommt. Gäste-WC ohne Sonderregel.
