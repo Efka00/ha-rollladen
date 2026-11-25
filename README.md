@@ -31,7 +31,7 @@ Die Integration fährt die Rollläden selbst: morgens hoch und abends runter nac
 ## Was die Integration kann
 
 - **Tagesfahrten** je Rollladen und Richtung mit eigenem Zeitfenster (frühestens / spätestens) und drei Fahrmodi: Zeit, Helligkeit, Astro.
-- **Anwesenheit** je Richtung: immer, nur wenn niemand da ist, oder gar nicht.
+- **Modus** (Anwesenheit) je Richtung: immer, nur wenn niemand da ist, oder gar nicht.
 - **Fenstergriff:** Nachts folgt der Rollladen dem Griff (zu / gekippt / offen).
 - **Tür-Sicherung (Aussperrschutz):** Bei offener Tür fährt der Rollladen nie zu, beim Öffnen sofort ganz auf.
 - **Handbetrieb-Erkennung:** Von Hand gefahren (Taster, Dashboard, andere Automation) wird respektiert, nachts mit einer Sperre und späterer Rückfahrt.
@@ -147,7 +147,7 @@ Neue Rollläden starten mit **Automatik aus**.
 | Hoch frühestens / spätestens | Uhrzeit | Zeitfenster der Morgenfahrt (Standard 07:30 / 09:00). |
 | Runter frühestens / spätestens | Uhrzeit | Zeitfenster der Abendfahrt (Standard 19:00 / 22:30). |
 | Fahrmodus hoch / runter | Auswahl | Zeit, Helligkeit, Astro. |
-| Anwesenheit hoch / runter | Auswahl | Immer, Nur wenn niemand da ist, Aus. |
+| Modus hoch / runter | Auswahl | Ob die Tagesfahrt läuft: Immer, Nur wenn niemand da ist (Personen aus den Anlagen-Einstellungen), Aus. Entity-ID bei neuen Rollläden `select.<name>_modus_hoch/runter`, bei vor 0.1.6 angelegten bleibt `…_anwesenheit_hoch/runter`. |
 | Beschattung | Auswahl | Aus, Immer, Nur wenn jemand da ist, Nur wenn niemand da ist (nur mit Azimut). |
 | Status | Sensor | Letzte Aktion mit Grund. Attribute: Phase, Soll, Position, Griff, Tür-Sperre, Handsperre bis, Blocking, Beschattung, Frostschutz, Helligkeit (Mittelwert). |
 | Position | Sensor (Diagnose) | Aktuelle Position des Covers in %. Attribute: gesteuertes Cover, Name, Griff, Taster, `letzter_befehl` und `protokoll` (die letzten 12 Befehle der Integration mit Uhrzeit und Grund, neueste zuerst). Steht eine Fahrt am Cover nicht im Protokoll, kam sie nicht von der Integration. |
@@ -219,7 +219,7 @@ Dann öffnet die Automatik höchstens bis zur Frostposition (10 %), bei der Morg
 Die Integration startet mit Automatik aus. Rollladen für Rollladen umstellen:
 
 1. Rollladen in der Integration anlegen (Werte unten).
-2. Zeiten, Fahrmodus, Anwesenheit und Beschattung an seinen Entities einstellen wie bisher.
+2. Zeiten, Fahrmodus, Modus und Beschattung an seinen Entities einstellen wie bisher.
 3. Im Altsystem: ASC-Automatik des Rollladens aus (`input_boolean.rollladen_*_auto`) und die **Taster-Automation deaktivieren**. Sonst reagieren beide auf denselben Taster und heben sich auf.
 4. Automatik des Rollladens in der Integration an, Anlagen-Automatik an.
 
@@ -279,7 +279,7 @@ python3 -m unittest discover -s tests -v
 
 ## Versionen
 
-- **0.1.6** (21.11.2026): Handbetrieb wird erst nach Fahrtende ausgewertet (3 s Stillstand). Eine Handfahrt ergibt einen Status-Eintrag statt etwa 18. Frostschutz aktiv hat ein Attribut `status` mit Klartext-Begründung.
+- **0.1.6** (21.11.2026): Handbetrieb wird erst nach Fahrtende ausgewertet (3 s Stillstand). Eine Handfahrt ergibt einen Status-Eintrag statt etwa 18. Frostschutz aktiv hat ein Attribut `status` mit Klartext-Begründung. Die Auswahl „Anwesenheit hoch/runter“ heißt jetzt „Modus hoch/runter“ (bestehende Entity-IDs bleiben).
 - **0.1.5** (20.11.2026): Diagnose-Sensor heißt „Position“ und zeigt die Position des Covers in %. Das Cover steht im Attribut `cover`.
 - **0.1.4** (20.11.2026): Nächste und letzte Fahrten als Uhrzeit („19:00“, „morgen 07:49“) statt „in 8 Stunden“. Genauer Zeitpunkt im Attribut `zeitpunkt`.
 - **0.1.3** (20.11.2026): Langer Tastendruck stoppt genau einmal, auch wenn `press_long` beim Halten wiederholt kommt. Gäste-WC ohne Sonderregel.

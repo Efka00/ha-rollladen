@@ -46,7 +46,7 @@
     "step": {
       "init": {
         "title": "Rollladen",
-        "description": "Hier stellst du die Anlage ein und verwaltest die Rollläden. Automatik, Zeiten, Fahrmodus, Anwesenheit und Beschattung änderst du direkt an den Entities des jeweiligen Rollladens.",
+        "description": "Hier stellst du die Anlage ein und verwaltest die Rollläden. Automatik, Zeiten, Fahrmodus, Modus und Beschattung änderst du direkt an den Entities des jeweiligen Rollladens.",
         "menu_options": {
           "anlage": "Anlage einstellen",
           "frost": "Frostschutz",

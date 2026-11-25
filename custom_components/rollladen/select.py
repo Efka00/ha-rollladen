@@ -1,4 +1,4 @@
-"""Auswahl je Rollladen: Fahrmodus und Anwesenheit je Richtung,
+"""Auswahl je Rollladen: Fahrmodus und Modus (Anwesenheit) je Richtung,
 Beschattung."""
 
 from __future__ import annotations
@@ -16,8 +16,8 @@ from .logik import ANWESENHEIT, BESCHATTUNG, FAHRMODI, Rollladen
 AUSWAHL = (
     ("fahrmodus_hoch", "Fahrmodus hoch", FAHRMODI, "mdi:arrow-up-bold-box-outline"),
     ("fahrmodus_runter", "Fahrmodus runter", FAHRMODI, "mdi:arrow-down-bold-box-outline"),
-    ("anwesenheit_hoch", "Anwesenheit hoch", ANWESENHEIT, "mdi:account-arrow-up"),
-    ("anwesenheit_runter", "Anwesenheit runter", ANWESENHEIT, "mdi:account-arrow-down"),
+    ("anwesenheit_hoch", "Modus hoch", ANWESENHEIT, "mdi:account-arrow-up"),
+    ("anwesenheit_runter", "Modus runter", ANWESENHEIT, "mdi:account-arrow-down"),
     ("beschattung", "Beschattung", BESCHATTUNG, "mdi:sun-angle-outline"),
 )
 
