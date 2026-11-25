@@ -279,7 +279,7 @@ python3 -m unittest discover -s tests -v
 
 ## Versionen
 
-- **0.1.6** (21.11.2026): Handbetrieb wird erst nach Fahrtende ausgewertet (3 s Stillstand). Eine Handfahrt ergibt einen Status-Eintrag statt etwa 18. Frostschutz aktiv hat ein Attribut `status` mit Klartext-Begründung. Die Auswahl „Anwesenheit hoch/runter“ heißt jetzt „Modus hoch/runter“ (bestehende Entity-IDs bleiben).
+- **0.1.6** (25.11.2026): Handbetrieb wird erst nach Fahrtende ausgewertet (3 s Stillstand). Eine Handfahrt ergibt einen Status-Eintrag statt etwa 18. Frostschutz aktiv hat ein Attribut `status` mit Klartext-Begründung. Die Auswahl „Anwesenheit hoch/runter“ heißt jetzt „Modus hoch/runter“ (bestehende Entity-IDs bleiben).
 - **0.1.5** (20.11.2026): Diagnose-Sensor heißt „Position“ und zeigt die Position des Covers in %. Das Cover steht im Attribut `cover`.
 - **0.1.4** (20.11.2026): Nächste und letzte Fahrten als Uhrzeit („19:00“, „morgen 07:49“) statt „in 8 Stunden“. Genauer Zeitpunkt im Attribut `zeitpunkt`.
 - **0.1.3** (20.11.2026): Langer Tastendruck stoppt genau einmal, auch wenn `press_long` beim Halten wiederholt kommt. Gäste-WC ohne Sonderregel.
