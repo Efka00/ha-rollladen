@@ -664,7 +664,8 @@ class Anlage:
         for r in self.rolllaeden.values():
             if r.s.get("bereich_gesetzt"):
                 continue
-            geraet = dev_reg.async_get_device(identifiers={(DOMAIN, r.id)})
+            geraet = dev_reg.async_get_device_by_identifier(
+                (DOMAIN, r.id), self.entry.entry_id)
             if geraet is None:
                 continue
             r.s["bereich_gesetzt"] = True

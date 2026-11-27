@@ -4,7 +4,7 @@ Custom Integration für [Home Assistant](https://www.home-assistant.io/) zur Ste
 
 Die Integration fährt die Rollläden selbst: morgens hoch und abends runter nach Uhrzeit, Helligkeit oder Sonnenstand. Sie beschattet bei Sonne, folgt dem Fenstergriff, schützt Türen vor dem Aussperren, erkennt Handbetrieb, bedient die Wandtaster und passt bei Frost auf. Alles wird in der Oberfläche von Home Assistant eingerichtet. Es sind keine Helfer, Automationen oder YAML nötig.
 
-> **Stand:** Version 0.1.6, erste Fassung. Die Logik ist ein Port der AppDaemon-App „ASC“ (v0.27) und mit Tests abgesichert, im Alltag aber noch nicht erprobt. Die Oberfläche ist nur auf Deutsch.
+> **Stand:** Version 0.1.7, erste Fassung. Die Logik ist ein Port der AppDaemon-App „ASC“ (v0.27) und mit Tests abgesichert, im Alltag aber noch nicht erprobt. Die Oberfläche ist nur auf Deutsch.
 
 ---
 
@@ -279,6 +279,7 @@ python3 -m unittest discover -s tests -v
 
 ## Versionen
 
+- **0.1.7** (27.11.2026): Geräte werden über `async_get_device_by_identifier` gesucht. Damit ist die HA-Warnung zu `async_get_device` weg (ab HA 2027.8 wäre das ein Fehler).
 - **0.1.6** (25.11.2026): Handbetrieb wird erst nach Fahrtende ausgewertet (3 s Stillstand). Eine Handfahrt ergibt einen Status-Eintrag statt etwa 18. Frostschutz aktiv hat ein Attribut `status` mit Klartext-Begründung. Die Auswahl „Anwesenheit hoch/runter“ heißt jetzt „Modus hoch/runter“ (bestehende Entity-IDs bleiben).
 - **0.1.5** (20.11.2026): Diagnose-Sensor heißt „Position“ und zeigt die Position des Covers in %. Das Cover steht im Attribut `cover`.
 - **0.1.4** (20.11.2026): Nächste und letzte Fahrten als Uhrzeit („19:00“, „morgen 07:49“) statt „in 8 Stunden“. Genauer Zeitpunkt im Attribut `zeitpunkt`.
